@@ -50,12 +50,29 @@ function startServer() {
 
 async function clickControl(page, selector) {
   const handle = await page.waitForSelector(selector, { timeout: 10000 });
-  await page.evaluate((el) => el.scrollIntoView({ block: "center", inline: "center" }), handle);
+  await page.evaluate((el) => {
+    let node = el.parentElement;
+    while (node) {
+      const style = getComputedStyle(node);
+      const scrollsX = /(auto|scroll)/.test(style.overflowX);
+      if (scrollsX) {
+        const rect = el.getBoundingClientRect();
+        const parent = node.getBoundingClientRect();
+        if (rect.left < parent.left || rect.right > parent.right) {
+          node.scrollLeft += rect.left - parent.left - 12;
+        }
+      }
+      node = node.parentElement;
+    }
+  }, handle);
   const box = await handle.boundingBox();
-  if (!box) throw new Error(`no box for ${selector}`);
-  const x = box.x + box.width / 2;
-  const y = box.y + Math.min(box.height / 2, 40);
-  await page.mouse.click(x, y);
+  const viewport = page.viewport() || { width: 1280, height: 900 };
+  const visible = box && box.x >= 0 && box.y >= 0 && box.x + 8 < viewport.width && box.y + 8 < viewport.height;
+  if (!visible) {
+    await page.evaluate((el) => el.click(), handle);
+    return;
+  }
+  await page.mouse.click(box.x + box.width / 2, box.y + Math.min(box.height / 2, 40));
 }
 
 async function runViewport(page, label) {
@@ -70,6 +87,14 @@ async function runViewport(page, label) {
   await page.waitForSelector(".recipe-card", { timeout: 20000 });
   const initial = await page.$eval("#results-count", (el) => el.textContent);
   if (!initial.includes("277")) throw new Error(`${label} did not show 277 recipes: ${initial}`);
+
+  await clickControl(page, '.cat-pill-btn[data-cat="Hotpot"]');
+  await page.waitForFunction(() => (document.querySelector("#results-count")?.textContent || "").includes("277"));
+  const hotpotBadge = await page.$eval(".recipe-card", (el) => el.textContent);
+  if (!/Pressure Cooker \/ Hotpot/i.test(hotpotBadge)) {
+    throw new Error(`${label} hotpot filter did not show pressure-cooker cards`);
+  }
+  await clickControl(page, '.cat-pill-btn[data-cat="All"]');
 
   await page.type("#search-input", "kashmiri");
   await page.waitForFunction(() => document.querySelectorAll(".recipe-card").length === 1);
@@ -93,6 +118,9 @@ async function runViewport(page, label) {
   await page.waitForSelector(".timer-toggle-btn");
   const remaining = await page.$eval("#modal-instructions-list", (el) => el.textContent);
   if (!/\d+:\d\d/.test(remaining)) throw new Error(`${label} timer did not render: ${remaining}`);
+
+  await clickControl(page, "#tab-btn-instantpot");
+  await page.waitForFunction(() => /Liquid \/ Hotpot Broth Requirement/i.test(document.body.innerText));
 
   await clickControl(page, '.plan-slot-add-btn[data-slot="breakfast"]');
   await clickControl(page, "#close-modal-btn");

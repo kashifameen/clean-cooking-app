@@ -2,7 +2,7 @@
   "id": "clean-cooking-app",
   "name": "Clean Cooking — 100% Halal High-Protein App",
   "short_name": "Clean Cooking",
-  "description": "277 High-Protein Halal Recipes with Step Timers, Scaler, and Instant Pot Pro Guides",
+  "description": "277 High-Protein Halal Recipes with Step Timers, Scaler, and Pressure Cooker / Hotpot Pro Guides — App Made by Kash",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

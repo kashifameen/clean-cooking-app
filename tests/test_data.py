@@ -54,6 +54,14 @@ class RecipeDataTests(unittest.TestCase):
             {"Dinner": 87, "Breakfast": 68, "Lunch": 52, "Snacks": 49, "Drinks": 21},
         )
 
+    def test_pressure_cooker_hotpot_fields(self):
+        for recipe in self.recipes:
+            pot = recipe["instantPot"]
+            self.assertTrue(pot["applicable"])
+            self.assertTrue(pot.get("liquidRequired"))
+            self.assertIn("appliance", pot)
+            self.assertIn("Pressure Cooker / Hotpot", recipe["tags"])
+
     def test_guides_parse(self):
         shopping = json.loads((DATA / "shopping_guide.json").read_text(encoding="utf-8"))
         cookbook = json.loads((DATA / "cookbook_guide.json").read_text(encoding="utf-8"))

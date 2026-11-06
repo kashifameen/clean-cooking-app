@@ -1,6 +1,6 @@
 # Clean Cooking
 
-100% halal, high-protein cookbook and meal planner. This repository holds the app that is published at [https://clean-cooking-app.netlify.app/](https://clean-cooking-app.netlify.app/), plus a sideloadable Android package.
+100% halal, high-protein cookbook and meal planner. This repository holds the app that is published at [https://clean-cooking-app.netlify.app/](https://clean-cooking-app.netlify.app/), plus a sideloadable Android package. Version 1.0.1 adds the live site's Pressure Cooker / Hotpot guides (steps, timers, liquid requirements) on the same 277 recipes.
 
 The public site is a static web app. Recipe data is `public/data/recipes.json` (277 recipes). The browser does not call `/api`. A Flask server is included for local use and for the same static files.
 
@@ -24,7 +24,7 @@ Opening `public/index.html` as a `file://` URL cannot load the recipe JSON. Use 
 | | |
 | --- | --- |
 | Package | `app.cleancooking.halal` |
-| Version | `1.0.0` (`versionCode` 1) |
+| Version | `1.0.1` (`versionCode` 2). v1.0.0 used versionCode 1 and the same debug certificate. |
 | Min / target SDK | 23 / 35 |
 | Wrapper | Capacitor 7, web assets in `public/` |
 | Signing | **Debug**. `assembleDebug` uses the machine-local debug keystore (`~/.android/debug.keystore`). That file is not in this repository. The certificate subject is `CN=Android Debug`. This build is for sideload, not Google Play. |

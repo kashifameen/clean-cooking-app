@@ -21,6 +21,7 @@ const AppState = {
   activeModalScale: 1.0,
   checkedIngredients: new Set(),
   checkedSteps: new Set(),
+  checkedIpSteps: new Set(),
   activeTimers: {}, // stepId -> { totalSec, remainingSec, isRunning, intervalId }
   modalActiveTab: 'method' // 'method' or 'instantpot'
 };
@@ -249,7 +250,7 @@ function renderSubcategoryPills() {
   if (!container) return;
 
   const cat = AppState.selectedCategory;
-  if (cat === 'All' || cat === 'Favorites') {
+  if (cat === 'All' || cat === 'Favorites' || cat === 'Hotpot') {
     container.innerHTML = '';
     container.classList.add('hidden');
     return;
@@ -300,6 +301,8 @@ function filterAndRenderRecipes() {
 
   if (AppState.selectedCategory === 'Favorites') {
     list = list.filter(r => AppState.favorites.has(r.id));
+  } else if (AppState.selectedCategory === 'Hotpot') {
+    list = list.filter(r => r.instantPot && r.instantPot.applicable);
   } else if (AppState.selectedCategory !== 'All') {
     list = list.filter(r => r.category === AppState.selectedCategory);
     if (AppState.selectedSubCategory !== 'All') {
@@ -412,8 +415,8 @@ function renderRecipeCard(r) {
               <i data-lucide="shield-check" class="w-3 h-3 text-emerald-400"></i> Halal
             </span>
             ${isIp ? `
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 backdrop-blur-md flex items-center gap-1" title="Instant Pot Pro pressure cooker instructions available">
-                <i data-lucide="gauge" class="w-3 h-3"></i> IP Pro
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 backdrop-blur-md flex items-center gap-1" title="Pressure Cooker & Hotpot (Instant Pot Pro) instructions available">
+                <i data-lucide="gauge" class="w-3 h-3 text-amber-400"></i> Pressure Cooker / Hotpot
               </span>
             ` : ''}
           </div>
@@ -530,6 +533,7 @@ function openRecipeModal(id) {
   AppState.activeModalScale = 1.0;
   AppState.checkedIngredients.clear();
   AppState.checkedSteps.clear();
+  AppState.checkedIpSteps.clear();
   AppState.modalActiveTab = 'method';
 
   renderModalContent();
@@ -844,6 +848,14 @@ function renderMethodStepsWithTimers(r) {
   initLucideIcons();
 }
 
+function refreshActiveStepsView(recipe) {
+  if (AppState.modalActiveTab === 'instantpot') {
+    renderInstantPotSection(recipe);
+  } else {
+    renderMethodStepsWithTimers(recipe);
+  }
+}
+
 function startTimer(key, duration, recipe) {
   if (AppState.activeTimers[key] && AppState.activeTimers[key].intervalId) {
     clearInterval(AppState.activeTimers[key].intervalId);
@@ -859,17 +871,17 @@ function startTimer(key, duration, recipe) {
   AppState.activeTimers[key].intervalId = setInterval(() => {
     if (AppState.activeTimers[key].remainingSec > 0) {
       AppState.activeTimers[key].remainingSec--;
-      renderMethodStepsWithTimers(recipe);
+      refreshActiveStepsView(recipe);
     } else {
       clearInterval(AppState.activeTimers[key].intervalId);
       AppState.activeTimers[key].isRunning = false;
       playTimerChime();
       showToast(`⏰ Step Timer Complete for ${recipe.title}!`);
-      renderMethodStepsWithTimers(recipe);
+      refreshActiveStepsView(recipe);
     }
   }, 1000);
 
-  renderMethodStepsWithTimers(recipe);
+  refreshActiveStepsView(recipe);
 }
 
 function toggleTimer(key, recipe) {
@@ -884,17 +896,17 @@ function toggleTimer(key, recipe) {
     t.intervalId = setInterval(() => {
       if (t.remainingSec > 0) {
         t.remainingSec--;
-        renderMethodStepsWithTimers(recipe);
+        refreshActiveStepsView(recipe);
       } else {
         clearInterval(t.intervalId);
         t.isRunning = false;
         playTimerChime();
         showToast(`⏰ Step Timer Complete for ${recipe.title}!`);
-        renderMethodStepsWithTimers(recipe);
+        refreshActiveStepsView(recipe);
       }
     }, 1000);
   }
-  renderMethodStepsWithTimers(recipe);
+  refreshActiveStepsView(recipe);
 }
 
 function resetTimer(key, duration, recipe) {
@@ -902,7 +914,7 @@ function resetTimer(key, duration, recipe) {
     clearInterval(AppState.activeTimers[key].intervalId);
   }
   delete AppState.activeTimers[key];
-  renderMethodStepsWithTimers(recipe);
+  refreshActiveStepsView(recipe);
 }
 
 function renderInstantPotSection(r) {
@@ -915,49 +927,174 @@ function renderInstantPotSection(r) {
     return;
   }
 
+  const totalSteps = ip.steps ? ip.steps.length : 0;
+  const completedCount = AppState.checkedIpSteps.size;
+  const progressPct = totalSteps > 0 ? Math.round((completedCount / totalSteps) * 100) : 0;
+
   container.innerHTML = `
     <div class="space-y-4">
-      <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
-          <span class="block text-[10px] text-amber-400 uppercase font-bold tracking-wider">Instant Pot Mode</span>
-          <span class="font-heading font-extrabold text-sm text-white">${ip.mode}</span>
+      <!-- 4-Card Pro Specs Grid -->
+      <div class="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div class="p-2.5 rounded-xl bg-slate-900/70 border border-slate-800">
+          <span class="block text-[10px] text-amber-400 uppercase font-bold tracking-wider">Appliance & Mode</span>
+          <span class="font-heading font-extrabold text-xs sm:text-sm text-white line-clamp-1" title="${ip.mode}">${ip.mode}</span>
         </div>
-        <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
+        <div class="p-2.5 rounded-xl bg-slate-900/70 border border-slate-800">
+          <span class="block text-[10px] text-blue-400 uppercase font-bold tracking-wider">Pressure / Heat</span>
+          <span class="font-heading font-extrabold text-xs sm:text-sm text-blue-300">${ip.pressureLevel || 'High Pressure'}</span>
+        </div>
+        <div class="p-2.5 rounded-xl bg-slate-900/70 border border-slate-800">
           <span class="block text-[10px] text-emerald-400 uppercase font-bold tracking-wider">Cook Duration</span>
-          <span class="font-heading font-extrabold text-sm text-emerald-300 font-mono">${ip.cookTime}</span>
+          <span class="font-heading font-extrabold text-xs sm:text-sm text-emerald-300 font-mono">${ip.cookTime || 'N/A'}</span>
         </div>
-        <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
-          <span class="block text-[10px] text-blue-400 uppercase font-bold tracking-wider">Steam Release</span>
-          <span class="font-heading font-extrabold text-sm text-blue-300">${ip.release}</span>
+        <div class="p-2.5 rounded-xl bg-slate-900/70 border border-slate-800">
+          <span class="block text-[10px] text-purple-400 uppercase font-bold tracking-wider">Steam Release / Lid</span>
+          <span class="font-heading font-extrabold text-xs sm:text-sm text-purple-300">${ip.release || 'Quick Release'}</span>
         </div>
       </div>
 
-      <div class="space-y-2.5">
-        <h4 class="font-heading font-bold text-base text-slate-100 flex items-center gap-2">
+      <!-- Liquid & Steam Requirement Alert -->
+      <div class="p-3 rounded-xl bg-slate-900/90 border border-amber-500/30 flex items-center gap-3 text-xs text-slate-300">
+        <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center flex-shrink-0">
+          <i data-lucide="droplet" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <span class="font-bold text-amber-300">Liquid / Hotpot Broth Requirement:</span>
+          <span class="text-slate-200 ml-1">${ip.liquidRequired || 'Minimum 120ml (1/2 cup) cooking broth or water'}</span>
+        </div>
+      </div>
+
+      <!-- Completion Bar -->
+      <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
           <i data-lucide="gauge" class="w-4 h-4 text-amber-400"></i>
-          Instant Pot Pro Pressure Cooker Directions
+          <span class="text-xs font-bold text-slate-200">
+            Pressure Cooker / Hotpot Progress: <span class="text-amber-400 font-mono">${completedCount} of ${totalSteps}</span>
+          </span>
+        </div>
+        <div class="w-36 bg-slate-800 h-2 rounded-full overflow-hidden">
+          <div class="bg-amber-500 h-full transition-all duration-300" style="width: ${progressPct}%"></div>
+        </div>
+      </div>
+
+      <!-- Steps with Checkboxes and Timers -->
+      <div class="space-y-2.5">
+        <h4 class="font-heading font-bold text-sm text-slate-200 flex items-center gap-2">
+          <i data-lucide="list-ordered" class="w-4 h-4 text-amber-400"></i>
+          Pressure Cooker & Hotpot (Instant Pot Pro) Directions
         </h4>
 
-        <div class="space-y-2">
-          ${ip.steps.map((s, idx) => `
-            <div class="flex items-start gap-3 p-3 rounded-xl bg-slate-800/40 border border-slate-700/50">
-              <span class="w-6 h-6 rounded-lg bg-amber-500 text-slate-950 font-heading font-black text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
-                ${idx + 1}
-              </span>
-              <p class="text-sm text-slate-200 leading-relaxed">${s}</p>
-            </div>
-          `).join('')}
+        <div class="space-y-2" id="ip-steps-list">
+          ${ip.steps.map((step, idx) => {
+            const isChecked = AppState.checkedIpSteps.has(idx);
+            const duration = extractStepDuration(step);
+            const stepKey = `ip-step-${idx}`;
+            const timerState = AppState.activeTimers[stepKey];
+
+            return `
+              <div class="step-card p-4 rounded-xl border transition-all duration-200 ${isChecked ? 'bg-amber-950/20 border-amber-500/40 opacity-75' : 'bg-slate-800/40 border-slate-700/60 hover:border-slate-600'}">
+                <div class="flex items-start gap-3.5">
+                  <label class="flex items-center cursor-pointer mt-0.5 select-none" title="Mark step complete">
+                    <input type="checkbox" class="custom-checkbox ip-step-tick-cb w-5 h-5 accent-amber-500" data-step="${idx}" ${isChecked ? 'checked' : ''}>
+                  </label>
+
+                  <div class="flex-1 space-y-2">
+                    <div class="flex items-baseline justify-between gap-2">
+                      <span class="text-[11px] font-heading font-black tracking-wider uppercase ${isChecked ? 'text-amber-400' : 'text-slate-400'}">
+                        Step ${idx + 1}
+                      </span>
+                      ${duration ? `
+                        <span class="text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full font-mono flex items-center gap-1">
+                          <i data-lucide="clock" class="w-3 h-3"></i> ~${Math.round(duration / 60)} min
+                        </span>
+                      ` : ''}
+                    </div>
+
+                    <p class="text-sm leading-relaxed text-slate-200 ${isChecked ? 'line-through text-slate-400' : ''}">
+                      ${step}
+                    </p>
+
+                    ${duration ? `
+                      <div class="pt-2 border-t border-slate-700/40 flex items-center gap-2">
+                        ${!timerState ? `
+                          <button class="ip-start-timer-btn px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 transition" data-step-key="${stepKey}" data-duration="${duration}">
+                            <i data-lucide="play" class="w-3.5 h-3.5"></i> Start ${Math.round(duration / 60)}m Timer
+                          </button>
+                        ` : `
+                          <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-amber-500/50 shadow-md">
+                            <i data-lucide="timer" class="w-4 h-4 text-amber-400 ${timerState.isRunning ? 'animate-pulse' : ''}"></i>
+                            <span class="font-mono font-black text-sm text-amber-300 w-14 text-center">
+                              ${formatTime(timerState.remainingSec)}
+                            </span>
+                            <button class="ip-timer-toggle-btn p-1 rounded hover:bg-slate-800 text-slate-300" data-step-key="${stepKey}" title="${timerState.isRunning ? 'Pause' : 'Resume'}">
+                              <i data-lucide="${timerState.isRunning ? 'pause' : 'play'}" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button class="ip-timer-reset-btn p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-rose-400" data-step-key="${stepKey}" data-duration="${duration}" title="Reset">
+                              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                            </button>
+                          </div>
+                        `}
+                      </div>
+                    ` : ''}
+
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')}
         </div>
       </div>
 
-      <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-400">
-        <p class="flex items-center gap-1.5 font-semibold text-amber-300 mb-1">
-          <i data-lucide="info" class="w-4 h-4"></i> Instant Pot Pro Quick Tip:
+      <!-- Pressure Cooker & Hotpot Pro Tips -->
+      <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-400 space-y-1.5">
+        <p class="flex items-center gap-1.5 font-bold text-amber-300">
+          <i data-lucide="shield-alert" class="w-4 h-4"></i> Pressure Cooker & Hotpot Pro Tips:
         </p>
-        Always ensure minimum 120ml (1/2 cup) of thin cooking liquid (water, broth) is in the bottom of the pot before sealing to avoid the 'Burn' warning.
+        <p>• <strong>Pressure Cooker Mode:</strong> Always ensure the steam release valve is set to <em>Sealing</em> and there is minimum 120ml liquid in the pot before sealing to avoid the <em>Food Burn</em> warning.</p>
+        <p>• <strong>Hotpot Mode:</strong> Use <em>Sauté / Hotpot</em> (Med/High) with lid off (or glass lid) for tabletop hotpot simmering, searing, reducing broths, or melting cheese.</p>
+        <p>• <strong>Steaming / Baking:</strong> Use the stainless steel trivet with 250ml water beneath for delicate cakes, puddings, oats, and tender steamed proteins.</p>
       </div>
     </div>
   `;
+
+  // Attach event listeners for Instant Pot checkboxes and timers
+  container.querySelectorAll('.ip-step-tick-cb').forEach(cb => {
+    cb.addEventListener('change', (e) => {
+      const stepIdx = parseInt(e.target.dataset.step);
+      if (e.target.checked) {
+        AppState.checkedIpSteps.add(stepIdx);
+      } else {
+        AppState.checkedIpSteps.delete(stepIdx);
+      }
+      renderInstantPotSection(r);
+      initLucideIcons();
+    });
+  });
+
+  container.querySelectorAll('.ip-start-timer-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const key = e.currentTarget.dataset.stepKey;
+      const duration = parseInt(e.currentTarget.dataset.duration);
+      startTimer(key, duration, r);
+    });
+  });
+
+  container.querySelectorAll('.ip-timer-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const key = e.currentTarget.dataset.stepKey;
+      toggleTimer(key, r);
+    });
+  });
+
+  container.querySelectorAll('.ip-timer-reset-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const key = e.currentTarget.dataset.stepKey;
+      const duration = parseInt(e.currentTarget.dataset.duration);
+      resetTimer(key, duration, r);
+    });
+  });
+
+  initLucideIcons();
 }
 
 function setupModalActionButtons(recipe, scale) {

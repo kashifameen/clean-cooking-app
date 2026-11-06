@@ -1,6 +1,6 @@
 # Clean Cooking
 
-100% halal, high-protein cookbook and meal planner. This repository holds the app that is published at [https://clean-cooking-app.netlify.app/](https://clean-cooking-app.netlify.app/), plus a sideloadable Android package. Version 1.0.1 adds the live site's Pressure Cooker / Hotpot guides (steps, timers, liquid requirements) on the same 277 recipes.
+100% halal, high-protein cookbook and meal planner. This repository holds the app that is published at [https://clean-cooking-app.netlify.app/](https://clean-cooking-app.netlify.app/), plus a sideloadable Android package. Version 1.1.0 follows the current site: Pressure Cooker / Hotpot guides and a meal-prep planner with a Mifflin-St Jeor BMR calculator, still on 277 recipes. The copy of `app.js` on the public site had a stray block after `filterPickerRecipes` that stopped the script from parsing. That fragment is removed here so the rest of the live meal-prep code can run. If a newer service worker is already controlling the page, the app reloads once so the new shell replaces the cached one.
 
 The public site is a static web app. Recipe data is `public/data/recipes.json` (277 recipes). The browser does not call `/api`. A Flask server is included for local use and for the same static files.
 
@@ -15,7 +15,7 @@ python app.py
 
 Open [http://127.0.0.1:5000](http://127.0.0.1:5000).
 
-`python app.py` serves `public/` and the JSON API under `/api/recipes` and `/api/guides`. Favorites, the meal plan, the shopping list, and the profile stay in `localStorage` in the browser. They are not stored on the server.
+`python app.py` serves `public/` and the JSON API under `/api/recipes` and `/api/guides`. Favorites, the meal plan, meal prep, the shopping list, and the profile stay in `localStorage` in the browser. They are not stored on the server.
 
 Opening `public/index.html` as a `file://` URL cannot load the recipe JSON. Use the Flask server or any static file server whose root is `public/`.
 
@@ -24,32 +24,44 @@ Opening `public/index.html` as a `file://` URL cannot load the recipe JSON. Use 
 | | |
 | --- | --- |
 | Package | `app.cleancooking.halal` |
-| Version | `1.0.1` (`versionCode` 2). v1.0.0 used versionCode 1 and the same debug certificate. |
+| Version | `1.1.0` (`versionCode` 4) |
 | Min / target SDK | 23 / 35 |
 | Wrapper | Capacitor 7, web assets in `public/` |
-| Signing | **Debug**. `assembleDebug` uses the machine-local debug keystore (`~/.android/debug.keystore`). That file is not in this repository. The certificate subject is `CN=Android Debug`. This build is for sideload, not Google Play. |
-| Output | `android/app/build/outputs/apk/debug/app-debug.apk` |
+| Distribution build | **Release-signed and not debuggable.** This is the APK to send to friends. It is not a Google Play upload. |
+| Output | `android/app/build/outputs/apk/release/app-release.apk` |
 
-No release keystore is configured. Do not commit a `.keystore`, `.jks`, or `android/local.properties` (it contains a machine-specific SDK path).
-
-### Build
-
-Install Node.js 22, JDK 21, and Android SDK platform 35 with build-tools 35.0.0. Point `ANDROID_HOME` at the SDK.
+The release keystore and its passphrase are not in this repository. `assembleRelease` reads them from the environment:
 
 ```bash
-npm ci
-npm run android:debug
+export ANDROID_HOME=/path/to/android-sdk
+export CLEAN_COOKING_KEYSTORE=/path/to/cleancooking-release.jks
+export CLEAN_COOKING_KEY_ALIAS=cleancooking-release
+export CLEAN_COOKING_KEYSTORE_PASSWORD_FILE=/path/to/keystore.pass
+chmod +x scripts/assemble-release.sh
+./scripts/assemble-release.sh
 ```
 
-`npm run android:debug` rebuilds the Tailwind CSS, copies `public/` into the Android project, and runs `./gradlew assembleDebug`.
+`CLEAN_COOKING_KEYSTORE_PASSWORD` can be set instead of the password file. Do not commit either value, a `.jks`, a `.keystore`, or `android/local.properties`.
 
-On a phone, enable install from unknown sources and open the APK, or:
+`npm run android:debug` still builds a debug APK with the machine debug key. That file is only for local development. It cannot update or replace the release-signed app, and the release app cannot update a copy that was installed from the older debug releases (v1.0.0 or v1.0.1). Remove those debug installs first, then install the release APK. Saved data in a debug install is not carried into the new install.
 
-```bash
-adb install -r android/app/build/outputs/apk/debug/app-debug.apk
-```
+### Install on a phone
 
-A GitHub Actions workflow (`.github/workflows/android-debug-apk.yml`) builds the same debug APK on pull requests. Its signature differs from a local debug keystore because GitHub-hosted runners generate their own debug key.
+1. Copy `app-release.apk` to the phone, or use `adb install -r app-release.apk` from a computer.
+2. Allow installation from the app you used to open the file (Files, Chrome, or similar). Android calls this “install unknown apps.”
+3. Confirm the install. Google Play Protect may scan the file. Signing this APK does not turn Play Protect, Samsung Auto Blocker, or a work-profile restriction off, and this project does not ask you to disable them.
+4. Open Clean Cooking. The recipe list, search, timers, and meal prep work without a network. Photos in the APK are the bundled thumbnails.
+
+### Sideload checks that signing does not remove
+
+As of the [Android developer verification guide](https://developer.android.com/developer-verification/guides) (checked November 2026):
+
+- From 30 September 2026, certified devices in Brazil, Indonesia, Singapore, and Thailand check developer registration for installs that come through participating stores (Google Play, Galaxy Store, and several other manufacturer stores).
+- Installing an APK file outside those stores can still work. Google’s guide says unregistered apps use an advanced sideload flow with extra prompts, and that `adb` install behavior stays the same. A wider requirement for certified devices is planned for 2027.
+- This package is not registered in the Android Developer Console or Google Play. No developer account was created for it. Friends in the countries above may see extra install prompts. That is a device policy, not a broken APK.
+- Play Protect can still warn about an app it has not seen before. A private signature does not make that warning impossible.
+
+A GitHub Actions workflow (`.github/workflows/android-debug-apk.yml`) still builds a debug APK for pull requests. It does not have the release key, so it is not the file to share.
 
 ## Offline and photos
 

@@ -123,19 +123,23 @@ async function runViewport(page, label) {
   await page.waitForFunction(() => /Liquid \/ Hotpot Broth Requirement/i.test(document.body.innerText));
 
   await clickControl(page, '.plan-slot-add-btn[data-slot="breakfast"]');
+  await clickControl(page, "#modal-add-prep-btn");
   await clickControl(page, "#close-modal-btn");
   await clickControl(page, '.nav-tab-btn[data-tab="planner"]');
-  await page.waitForFunction(() => document.querySelector("#view-planner") && !document.querySelector("#view-planner").classList.contains("hidden"));
-  const plannerText = await page.$eval("#planner-slots-container", (el) => el.textContent);
-  if (!/kashmiri/i.test(plannerText)) throw new Error(`${label} meal plan missing recipe`);
+  await page.waitForFunction(() => {
+    const view = document.querySelector("#view-planner");
+    return view && !view.classList.contains("hidden") && /Meal Prep/i.test(view.textContent || "");
+  });
+  const stored = await page.evaluate(() => ({
+    plan: localStorage.getItem("clean_cooking_meal_plan") || "",
+    prep: localStorage.getItem("clean_cooking_meal_prep") || "",
+  }));
+  if (!stored.plan.toLowerCase().includes("kashmiri")) throw new Error(`${label} meal plan did not persist`);
+  if (!stored.prep.toLowerCase().includes("kashmiri")) throw new Error(`${label} meal prep did not persist`);
 
   await page.reload({ waitUntil: "networkidle0" });
-  await clickControl(page, '.nav-tab-btn[data-tab="planner"]');
-  await page.waitForFunction(() => /kashmiri/i.test(document.querySelector("#planner-slots-container")?.textContent || ""));
-  const stored = await page.evaluate(() => localStorage.getItem("clean_cooking_meal_plan"));
-  if (!stored || !stored.toLowerCase().includes("kashmiri")) {
-    throw new Error(`${label} meal plan did not persist`);
-  }
+  const storedAfter = await page.evaluate(() => localStorage.getItem("clean_cooking_meal_prep") || "");
+  if (!storedAfter.toLowerCase().includes("kashmiri")) throw new Error(`${label} meal prep did not survive reload`);
 
   await clickControl(page, '.nav-tab-btn[data-tab="recipes"]');
   await page.waitForSelector(".fav-btn");

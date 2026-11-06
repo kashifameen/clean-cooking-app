@@ -15,6 +15,13 @@
   <script src="js/vendor/lucide.min.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
+      if (navigator.serviceWorker.controller) {
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (window.__ccSwReloading) return;
+          window.__ccSwReloading = true;
+          window.location.reload();
+        });
+      }
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').catch(() => {});
       });
@@ -59,9 +66,9 @@
           <span>Drinks & Pink Tea</span>
         </button>
         <button class="nav-tab-btn flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border transition text-slate-400 border-transparent hover:text-slate-200" data-tab="planner">
-          <i data-lucide="calendar-check" class="w-4 h-4"></i>
-          <span class="hidden sm:inline">Macro Planner</span>
-          <span class="sm:hidden">Planner</span>
+          <i data-lucide="chef-hat" class="w-4 h-4 text-emerald-400"></i>
+          <span class="hidden sm:inline">Meal Prep & BMR</span>
+          <span class="sm:hidden">Meal Prep</span>
         </button>
         <button class="nav-tab-btn flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border transition text-slate-400 border-transparent hover:text-slate-200" data-tab="shopping">
           <i data-lucide="shopping-bag" class="w-4 h-4"></i>
@@ -198,100 +205,198 @@
 
     </section>
 
-    <!-- ================= VIEW 2: DAILY MACRO PLANNER ================= -->
+    <!-- ================= VIEW 2: MEAL PREP & BMR MACRO CALCULATOR ================= -->
     <section id="view-planner" class="tab-view space-y-6 hidden">
-      <div class="glass-panel p-6 rounded-2xl space-y-5 border border-slate-800">
-        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+      
+      <!-- Main Dashboard Card -->
+      <div class="glass-panel p-6 rounded-2xl space-y-6 border border-slate-800">
+        
+        <!-- Header & Action Row -->
+        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-5 border-b border-slate-800">
           <div>
-            <h2 class="font-heading font-extrabold text-2xl text-white">Daily Macro Planner & Tracker</h2>
-            <p class="text-xs text-slate-400 mt-0.5">Track cutting deficit or lean bulking surplus across 4 daily meal slots with 2.2g protein / kg target.</p>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Smart Batch Prep
+              </span>
+              <span class="text-xs text-slate-400 font-mono">Mifflin-St Jeor Clinical Formula</span>
+            </div>
+            <h2 class="font-heading font-black text-2xl text-white">Meal Prep & BMR Macro Calculator</h2>
+            <p class="text-xs text-slate-400 mt-1 max-w-2xl">
+              Calculate your exact BMR and TDEE, tailor calories for <strong>Muscle Gain (Bulking)</strong> or <strong>Fat Loss (Cutting)</strong>, and batch prep high-protein Halal meals for <strong>3, 5, or 7 days</strong> with Instant Pot Pro support.
+            </p>
           </div>
           
-          <div class="flex items-center gap-2">
-            <button onclick="addPlanIngredientsToShoppingList()" class="px-3.5 py-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-bold hover:bg-emerald-500/20 transition flex items-center gap-1.5 shadow">
-              <i data-lucide="shopping-bag" class="w-4 h-4"></i> Export to Shopping List
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="triggerAutoSuggestPlan()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/20 transition flex items-center gap-1.5">
+              <i data-lucide="sparkles" class="w-4 h-4"></i> Auto-Suggest Plan
             </button>
-            <button onclick="clearEntireMealPlan()" class="px-3 py-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/20 transition flex items-center gap-1.5">
-              <i data-lucide="trash-2" class="w-4 h-4"></i> Clear Day
+            <button onclick="openMealPrepPickerModal()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition flex items-center gap-1.5">
+              <i data-lucide="plus-circle" class="w-4 h-4 text-emerald-400"></i> Browse 277 Meals
             </button>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
-          <div>
-            <label class="block text-slate-400 font-semibold mb-1">Body Weight (kg):</label>
-            <input type="number" id="profile-weight" value="80" class="w-full p-2 rounded-lg bg-slate-800 border border-slate-700 text-white font-mono font-bold focus:outline-none focus:border-emerald-500">
-          </div>
-          <div>
-            <label class="block text-slate-400 font-semibold mb-1">Goal:</label>
-            <select id="profile-goal" class="w-full p-2 rounded-lg bg-slate-800 border border-slate-700 text-white font-medium focus:outline-none focus:border-emerald-500">
-              <option value="cut">Fat Loss (Cutting Deficit)</option>
-              <option value="maintain">Maintenance</option>
-              <option value="bulk">Lean Muscle Gain (Bulking Surplus)</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-slate-400 font-semibold mb-1">Target Calories (TDEE):</label>
-            <input type="number" id="profile-tdee" value="2600" class="w-full p-2 rounded-lg bg-slate-800 border border-slate-700 text-white font-mono font-bold focus:outline-none focus:border-emerald-500">
-          </div>
-          <div class="flex items-end">
-            <button id="save-profile-btn" class="w-full py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold transition">
-              Update Targets
+            <button onclick="exportMealPrepToShoppingList()" class="px-3.5 py-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-bold hover:bg-emerald-500/20 transition flex items-center gap-1.5 shadow">
+              <i data-lucide="shopping-bag" class="w-4 h-4"></i> Export Batch Groceries
+            </button>
+            <button onclick="clearEntireMealPrep()" class="px-3 py-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/20 transition flex items-center gap-1.5" title="Clear current meal prep">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
             </button>
           </div>
         </div>
 
-        <!-- Live Daily Macro Progress Dashboard -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
-          <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
-            <div class="flex justify-between items-baseline">
-              <span class="text-xs uppercase font-bold text-amber-400">Calories</span>
-              <span id="plan-target-cals" class="text-[11px] text-slate-400 font-mono">2600 kcal</span>
+        <!-- Interactive BMR & Body Stats Calculator Form -->
+        <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/90 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs uppercase font-extrabold text-emerald-400 tracking-wider flex items-center gap-1.5">
+              <i data-lucide="calculator" class="w-4 h-4"></i> Step 1: Body Metrics & Goal Calculator
+            </h3>
+            <span class="text-[11px] text-slate-400">Auto-calculates BMR & Target Macros</span>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
+            <div>
+              <label class="block text-slate-400 font-semibold mb-1">Gender:</label>
+              <select id="prep-gender" onchange="updateBmrCalculation()" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-medium focus:outline-none focus:border-emerald-500">
+                <option value="male">Male (+5)</option>
+                <option value="female">Female (-161)</option>
+              </select>
             </div>
-            <div class="flex items-baseline gap-1">
-              <span id="plan-total-cals" class="font-heading font-black text-2xl text-amber-300">0</span>
-              <span class="text-xs text-slate-400">kcal</span>
+            <div>
+              <label class="block text-slate-400 font-semibold mb-1">Age (years):</label>
+              <input type="number" id="prep-age" value="25" min="15" max="100" oninput="updateBmrCalculation()" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-mono font-bold focus:outline-none focus:border-emerald-500">
             </div>
-            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-              <div id="plan-cal-bar" class="bg-amber-400 h-full w-0 transition-all duration-500 rounded-full"></div>
+            <div>
+              <label class="block text-slate-400 font-semibold mb-1">Height (cm):</label>
+              <input type="number" id="prep-height" value="178" min="100" max="230" oninput="updateBmrCalculation()" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-mono font-bold focus:outline-none focus:border-emerald-500">
+            </div>
+            <div>
+              <label class="block text-slate-400 font-semibold mb-1">Weight (kg):</label>
+              <input type="number" id="prep-weight" value="80" min="35" max="250" oninput="updateBmrCalculation()" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-mono font-bold focus:outline-none focus:border-emerald-500">
+            </div>
+            <div>
+              <label class="block text-slate-400 font-semibold mb-1">Activity Level:</label>
+              <select id="prep-activity" onchange="updateBmrCalculation()" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-medium focus:outline-none focus:border-emerald-500">
+                <option value="1.2">Sedentary (Desk Job)</option>
+                <option value="1.375">Light (1-2 days/wk)</option>
+                <option value="1.55" selected>Moderate (3-5 days/wk)</option>
+                <option value="1.725">Very Active (6-7 days/wk)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-slate-400 font-semibold mb-1">Fitness Goal:</label>
+              <select id="prep-goal" onchange="updateBmrCalculation()" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-bold focus:outline-none focus:border-emerald-500 text-emerald-400">
+                <option value="bulk" selected>🚀 Muscle Gain (+350 kcal)</option>
+                <option value="cut">⚡ Fat Loss / Cut (-500 kcal)</option>
+                <option value="maintain">⚖️ Maintain Weight (0 kcal)</option>
+              </select>
             </div>
           </div>
 
-          <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
-            <div class="flex justify-between items-baseline">
-              <span class="text-xs uppercase font-bold text-emerald-400">Protein (2.2g/kg)</span>
-              <span id="plan-target-pro" class="text-[11px] text-slate-400 font-mono">176g</span>
+          <!-- Meal Prep Duration Selector -->
+          <div class="pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                <i data-lucide="calendar" class="w-4 h-4 text-amber-400"></i> Step 2: Meal Prep Duration:
+              </span>
             </div>
-            <div class="flex items-baseline gap-1">
-              <span id="plan-total-pro" class="font-heading font-black text-2xl text-emerald-300">0g</span>
-            </div>
-            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-              <div id="plan-pro-bar" class="bg-emerald-400 h-full w-0 transition-all duration-500 rounded-full"></div>
+            <div class="flex items-center gap-1.5 bg-slate-950/80 p-1 rounded-xl border border-slate-800">
+              <button onclick="setMealPrepDays(3)" id="prep-days-btn-3" class="prep-days-pill px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white">
+                3 Days (Weekend)
+              </button>
+              <button onclick="setMealPrepDays(5)" id="prep-days-btn-5" class="prep-days-pill px-3 py-1.5 rounded-lg text-xs font-bold transition bg-emerald-500 text-slate-950 font-extrabold shadow">
+                5 Days (Work Week)
+              </button>
+              <button onclick="setMealPrepDays(7)" id="prep-days-btn-7" class="prep-days-pill px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white">
+                7 Days (Full Week)
+              </button>
+              <button onclick="promptCustomPrepDays()" id="prep-days-btn-custom" class="prep-days-pill px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white">
+                Custom
+              </button>
             </div>
           </div>
+        </div>
 
-          <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
-            <span class="text-xs uppercase font-bold text-blue-400 block">Total Carbs</span>
+        <!-- Calculated Live Metrics Strip (4 BMR/Target Cards) -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+          <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+            <span class="block text-[10px] text-slate-400 uppercase font-bold tracking-wider">Base Metabolism</span>
             <div class="flex items-baseline gap-1">
-              <span id="plan-total-carbs" class="font-heading font-black text-2xl text-blue-300">0g</span>
+              <span id="stat-bmr" class="font-heading font-black text-2xl text-slate-200">1,793</span>
+              <span class="text-xs text-slate-500 font-mono">kcal/day</span>
             </div>
-            <span class="text-[11px] text-slate-500 block">Sustained energy</span>
+            <span class="text-[11px] text-slate-500 block">Mifflin-St Jeor BMR at rest</span>
           </div>
 
-          <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
-            <span class="text-xs uppercase font-bold text-rose-400 block">Total Fat</span>
+          <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+            <span class="block text-[10px] text-blue-400 uppercase font-bold tracking-wider">Maintenance TDEE</span>
             <div class="flex items-baseline gap-1">
-              <span id="plan-total-fat" class="font-heading font-black text-2xl text-rose-300">0g</span>
+              <span id="stat-tdee" class="font-heading font-black text-2xl text-blue-300">2,779</span>
+              <span class="text-xs text-slate-500 font-mono">kcal/day</span>
             </div>
-            <span class="text-[11px] text-slate-500 block">Hormonal health</span>
+            <span class="text-[11px] text-slate-500 block">Energy spent with activity</span>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-900/80 border border-amber-500/30 space-y-1 bg-amber-500/5">
+            <div class="flex justify-between items-center">
+              <span class="text-[10px] text-amber-400 uppercase font-bold tracking-wider">Target Daily Calories</span>
+              <span id="stat-goal-badge" class="px-1.5 py-0.2 rounded text-[10px] font-extrabold bg-amber-500/20 text-amber-300">+350 Surplus</span>
+            </div>
+            <div class="flex items-baseline gap-1">
+              <span id="stat-target-cals" class="font-heading font-black text-2xl text-amber-300">3,129</span>
+              <span class="text-xs text-slate-400 font-mono">kcal/day</span>
+            </div>
+            <span id="stat-batch-cals" class="text-[11px] text-amber-400/80 font-mono block">15,645 kcal for 5 days</span>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-900/80 border border-emerald-500/30 space-y-1 bg-emerald-500/5">
+            <span class="block text-[10px] text-emerald-400 uppercase font-bold tracking-wider">Target Daily Protein</span>
+            <div class="flex items-baseline gap-1">
+              <span id="stat-target-pro" class="font-heading font-black text-2xl text-emerald-300">176</span>
+              <span class="text-xs text-slate-400 font-mono">g / day</span>
+            </div>
+            <span id="stat-batch-pro" class="text-[11px] text-emerald-400/80 font-mono block">880g protein for 5 days</span>
           </div>
         </div>
 
       </div>
 
-      <div id="planner-slots-container" class="space-y-4">
-        <!-- Rendered by JS -->
+      <!-- Meal Prep List & Auto-Suggestions Container -->
+      <div id="meal-prep-container" class="space-y-6">
+        <!-- Rendered dynamically by JS: either auto-suggestions or active meal prep batch items -->
       </div>
+
+      <!-- Instant Pot Pro Batch Cooking Guidance -->
+      <div class="glass-panel p-5 rounded-2xl border border-slate-800 space-y-3">
+        <h3 class="font-heading font-bold text-base text-white flex items-center gap-2">
+          <i data-lucide="gauge" class="w-5 h-5 text-amber-400"></i>
+          Instant Pot Pro & Hotpot 3-7 Day Batch Prep Tips
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-300 pt-1">
+          <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1">
+            <h4 class="font-bold text-amber-300 flex items-center gap-1.5">
+              <i data-lucide="layers" class="w-4 h-4"></i> Batch Protein Braise
+            </h4>
+            <p class="text-slate-400 leading-relaxed">
+              Pressure cook 1kg to 1.5kg of chicken breasts or beef strips on High Pressure for 10 mins with 150ml broth. Quick shred in the inner pot and portion evenly across your meal containers.
+            </p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1">
+            <h4 class="font-bold text-emerald-300 flex items-center gap-1.5">
+              <i data-lucide="utensils" class="w-4 h-4"></i> Fluffy Batch Rice & Quinoa
+            </h4>
+            <p class="text-slate-400 leading-relaxed">
+              Rinse 500g basmati rice, add 550ml broth (1:1.1 ratio). Pressure cook on Low for 4 mins, 10m Natural Release. Fluff with a silicone fork for perfectly tender grains that never clump when reheated.
+            </p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1">
+            <h4 class="font-bold text-blue-300 flex items-center gap-1.5">
+              <i data-lucide="shield-check" class="w-4 h-4"></i> Storage & Freshness
+            </h4>
+            <p class="text-slate-400 leading-relaxed">
+              For a 5-day or 7-day prep, keep containers for days 1–3 in the fridge (below 4°C). Freeze containers for days 4–7 immediately after cooling to preserve peak taste, moisture, and nutritional integrity.
+            </p>
+          </div>
+        </div>
+      </div>
+
     </section>
 
     <!-- ================= VIEW 3: SMART SHOPPING LIST ================= -->
@@ -587,20 +692,65 @@
 
         <!-- Action Buttons Footer -->
         <div class="pt-4 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
-          <button id="modal-add-shopping-btn" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-sm transition flex items-center gap-2 shadow-lg shadow-emerald-500/20">
-            <i data-lucide="shopping-cart" class="w-4 h-4"></i> Add to Shopping List
-          </button>
-
-          <!-- Add to Meal Plan Dropdown -->
           <div class="flex items-center gap-2">
-            <span class="text-xs text-slate-400 font-semibold">Plan for today:</span>
-            <button class="plan-slot-add-btn px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition" data-slot="breakfast">Breakfast</button>
-            <button class="plan-slot-add-btn px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition" data-slot="lunch">Lunch</button>
-            <button class="plan-slot-add-btn px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition" data-slot="dinner">Dinner</button>
-            <button class="plan-slot-add-btn px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition" data-slot="snacks">Drink / Snack</button>
+            <button id="modal-add-prep-btn" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm transition flex items-center gap-2 shadow-lg shadow-amber-500/20">
+              <i data-lucide="chef-hat" class="w-4 h-4"></i> Add to Meal Prep
+            </button>
+            <button id="modal-add-shopping-btn" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-sm transition flex items-center gap-2 shadow-lg shadow-emerald-500/20">
+              <i data-lucide="shopping-cart" class="w-4 h-4"></i> Add to Shopping List
+            </button>
+          </div>
+
+          <!-- Add to Daily Plan -->
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs text-slate-400 font-semibold mr-1">Today's Tracker:</span>
+            <button class="plan-slot-add-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition" data-slot="breakfast">Breakfast</button>
+            <button class="plan-slot-add-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition" data-slot="lunch">Lunch</button>
+            <button class="plan-slot-add-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition" data-slot="dinner">Dinner</button>
+            <button class="plan-slot-add-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition" data-slot="snacks">Snack</button>
           </div>
         </div>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- Meal Prep Quick Recipe Picker Modal -->
+  <div id="meal-prep-picker-modal" class="fixed inset-0 z-50 modal-overlay items-center justify-center p-4 sm:p-6 hidden">
+    <div class="bg-[#111827] border border-slate-700/80 rounded-3xl w-full max-w-3xl max-h-[85vh] overflow-hidden shadow-2xl flex flex-col relative animate-fade-in">
+      
+      <!-- Picker Header -->
+      <div class="p-5 border-b border-slate-800 flex items-center justify-between gap-3 bg-slate-900/60">
+        <div>
+          <h3 class="font-heading font-extrabold text-lg text-white flex items-center gap-2">
+            <i data-lucide="chef-hat" class="w-5 h-5 text-emerald-400"></i>
+            Select Meals for Meal Prep Batch
+          </h3>
+          <p class="text-xs text-slate-400">Choose from all 277 Halal recipes to add directly into your batch meal prep.</p>
+        </div>
+        <button onclick="closeMealPrepPickerModal()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Picker Search & Filters -->
+      <div class="p-4 border-b border-slate-800/80 bg-slate-900/40 flex flex-col sm:flex-row gap-3">
+        <div class="relative flex-1">
+          <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+          <input type="text" id="picker-search-input" placeholder="Search by name, ingredient, chicken, rice..." oninput="filterPickerRecipes()" class="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500">
+        </div>
+        <div class="flex items-center gap-1.5 overflow-x-auto">
+          <button onclick="setPickerCategory('All')" class="picker-cat-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950" data-pcat="All">All</button>
+          <button onclick="setPickerCategory('Breakfast')" class="picker-cat-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300" data-pcat="Breakfast">Breakfast</button>
+          <button onclick="setPickerCategory('Lunch')" class="picker-cat-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300" data-pcat="Lunch">Lunch</button>
+          <button onclick="setPickerCategory('Dinner')" class="picker-cat-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300" data-pcat="Dinner">Dinner</button>
+          <button onclick="setPickerCategory('Drinks')" class="picker-cat-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300" data-pcat="Drinks">Drinks</button>
+        </div>
+      </div>
+
+      <!-- Picker Results List -->
+      <div id="picker-results-container" class="p-4 overflow-y-auto space-y-2 flex-1 divide-y divide-slate-800/60">
+        <!-- Rendered by JS -->
       </div>
     </div>
   </div>

@@ -15,8 +15,11 @@ const AppState = {
   sortBy: 'default',
   favorites: new Set(JSON.parse(localStorage.getItem('clean_cooking_favorites') || '[]')),
   mealPlan: JSON.parse(localStorage.getItem('clean_cooking_meal_plan') || '{"breakfast":[],"lunch":[],"dinner":[],"snacks":[]}'),
+  mealPrep: JSON.parse(localStorage.getItem('clean_cooking_meal_prep') || '{"days":5,"meals":[]}'),
+  userProfile: JSON.parse(localStorage.getItem('clean_cooking_user_profile') || '{"weight":80,"height":178,"age":25,"gender":"male","activity":1.55,"unit":"kg","goal":"bulk"}'),
+  suggestedPlanCache: null,
+  showingAutoSuggest: false,
   shoppingList: JSON.parse(localStorage.getItem('clean_cooking_shopping_list') || '[]'),
-  userProfile: JSON.parse(localStorage.getItem('clean_cooking_user_profile') || '{"weight":80,"unit":"kg","goal":"cut","customTdee":2600}'),
   activeModalRecipe: null,
   activeModalScale: 1.0,
   checkedIngredients: new Set(),
@@ -420,9 +423,14 @@ function renderRecipeCard(r) {
               </span>
             ` : ''}
           </div>
-          <button class="card-action-btn fav-btn p-2 rounded-full bg-slate-900/80 backdrop-blur-md text-slate-300 hover:text-rose-400 border border-white/10 transition" data-id="${r.id}" title="Save to favorites">
-            <i data-lucide="heart" class="w-4 h-4 ${isFav ? 'fill-rose-500 text-rose-500' : ''}"></i>
-          </button>
+          <div class="flex items-center gap-1.5">
+            <button onclick="event.stopPropagation(); quickAddRecipeToMealPrep('${r.id}')" class="p-1.5 px-2 rounded-full bg-slate-900/85 backdrop-blur-md text-slate-300 hover:text-amber-300 hover:bg-slate-800 border border-white/10 transition flex items-center gap-1 text-[10px] font-bold" title="Add to Meal Prep">
+              <i data-lucide="chef-hat" class="w-3.5 h-3.5 text-amber-400"></i> Prep
+            </button>
+            <button class="card-action-btn fav-btn p-2 rounded-full bg-slate-900/80 backdrop-blur-md text-slate-300 hover:text-rose-400 border border-white/10 transition" data-id="${r.id}" title="Save to favorites">
+              <i data-lucide="heart" class="w-4 h-4 ${isFav ? 'fill-rose-500 text-rose-500' : ''}"></i>
+            </button>
+          </div>
         </div>
 
         <div class="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-xs text-slate-300 z-10">
@@ -1098,6 +1106,13 @@ function renderInstantPotSection(r) {
 }
 
 function setupModalActionButtons(recipe, scale) {
+  const addPrepBtn = document.getElementById('modal-add-prep-btn');
+  if (addPrepBtn) {
+    addPrepBtn.onclick = () => {
+      addToMealPrep(recipe, 1);
+    };
+  }
+
   const addShopBtn = document.getElementById('modal-add-shopping-btn');
   if (addShopBtn) {
     addShopBtn.onclick = () => {
@@ -1162,128 +1177,628 @@ function showToast(msg) {
   }, 2500);
 }
 
-function renderPlannerView() {
-  const container = document.getElementById('planner-slots-container');
+// ================= MEAL PREP & BMR CALCULATOR ENGINE =================
+
+function calculateBmrAndTargets() {
+  const p = AppState.userProfile;
+  const w = parseFloat(p.weight) || 80;
+  const h = parseFloat(p.height) || 178;
+  const a = parseInt(p.age) || 25;
+  const g = p.gender || 'male';
+  const act = parseFloat(p.activity) || 1.55;
+
+  // Mifflin-St Jeor Formula
+  let bmr = (10 * w) + (6.25 * h) - (5 * a);
+  if (g === 'male') {
+    bmr += 5;
+  } else {
+    bmr -= 161;
+  }
+  bmr = Math.round(bmr);
+
+  const tdee = Math.round(bmr * act);
+  let targetCals = tdee;
+  let goalLabel = 'Maintenance';
+
+  if (p.goal === 'bulk') {
+    targetCals = tdee + 350; // Optimal lean bulking surplus
+    goalLabel = '+350 kcal Lean Surplus';
+  } else if (p.goal === 'cut') {
+    targetCals = Math.max(1200, tdee - 500); // Sustainable fat loss deficit
+    goalLabel = '-500 kcal Fat Loss Deficit';
+  }
+
+  const targetPro = Math.round(w * 2.2); // 2.2g per kg
+  const days = AppState.mealPrep.days || 5;
+
+  return {
+    bmr,
+    tdee,
+    targetCals,
+    targetPro,
+    goalLabel,
+    days,
+    batchTargetCals: targetCals * days,
+    batchTargetPro: targetPro * days
+  };
+}
+
+function updateBmrCalculation() {
+  const genderEl = document.getElementById('prep-gender');
+  const ageEl = document.getElementById('prep-age');
+  const heightEl = document.getElementById('prep-height');
+  const weightEl = document.getElementById('prep-weight');
+  const actEl = document.getElementById('prep-activity');
+  const goalEl = document.getElementById('prep-goal');
+
+  if (genderEl) AppState.userProfile.gender = genderEl.value;
+  if (ageEl) AppState.userProfile.age = parseInt(ageEl.value) || 25;
+  if (heightEl) AppState.userProfile.height = parseFloat(heightEl.value) || 178;
+  if (weightEl) AppState.userProfile.weight = parseFloat(weightEl.value) || 80;
+  if (actEl) AppState.userProfile.activity = parseFloat(actEl.value) || 1.55;
+  if (goalEl) AppState.userProfile.goal = goalEl.value;
+
+  localStorage.setItem('clean_cooking_user_profile', JSON.stringify(AppState.userProfile));
+
+  const stats = calculateBmrAndTargets();
+
+  const bmrEl = document.getElementById('stat-bmr');
+  const tdeeEl = document.getElementById('stat-tdee');
+  const calsEl = document.getElementById('stat-target-cals');
+  const proEl = document.getElementById('stat-target-pro');
+  const batchCalsEl = document.getElementById('stat-batch-cals');
+  const batchProEl = document.getElementById('stat-batch-pro');
+  const goalBadgeEl = document.getElementById('stat-goal-badge');
+
+  if (bmrEl) bmrEl.innerText = stats.bmr.toLocaleString();
+  if (tdeeEl) tdeeEl.innerText = stats.tdee.toLocaleString();
+  if (calsEl) calsEl.innerText = stats.targetCals.toLocaleString();
+  if (proEl) proEl.innerText = stats.targetPro.toLocaleString();
+  if (batchCalsEl) batchCalsEl.innerText = `${stats.batchTargetCals.toLocaleString()} kcal for ${stats.days} days`;
+  if (batchProEl) batchProEl.innerText = `${stats.batchTargetPro.toLocaleString()}g protein for ${stats.days} days`;
+  if (goalBadgeEl) goalBadgeEl.innerText = stats.goalLabel;
+
+  renderMealPrepSection();
+}
+
+function setMealPrepDays(days) {
+  AppState.mealPrep.days = parseInt(days) || 5;
+  saveMealPrep();
+
+  document.querySelectorAll('.prep-days-pill').forEach(btn => {
+    btn.className = "prep-days-pill px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white";
+  });
+
+  const activeBtn = document.getElementById(`prep-days-btn-${days}`);
+  if (activeBtn) {
+    activeBtn.className = "prep-days-pill px-3 py-1.5 rounded-lg text-xs font-bold transition bg-emerald-500 text-slate-950 font-extrabold shadow";
+  }
+
+  updateBmrCalculation();
+  showToast(`Updated to ${days}-Day Meal Prep Batch!`);
+}
+
+function promptCustomPrepDays() {
+  const input = prompt("Enter number of meal prep days (e.g. 4, 10, 14):", AppState.mealPrep.days || 5);
+  if (input) {
+    const days = parseInt(input);
+    if (!isNaN(days) && days >= 1 && days <= 60) {
+      setMealPrepDays(days);
+    } else {
+      alert("Please enter a valid number of days between 1 and 60.");
+    }
+  }
+}
+
+function saveMealPrep() {
+  localStorage.setItem('clean_cooking_meal_prep', JSON.stringify(AppState.mealPrep));
+}
+
+function addToMealPrep(recipe, servingsPerDay = 1) {
+  if (!AppState.mealPrep.meals) AppState.mealPrep.meals = [];
+
+  const existing = AppState.mealPrep.meals.find(m => m.recipeId === recipe.id);
+  if (existing) {
+    existing.servingsPerDay = (existing.servingsPerDay || 1) + servingsPerDay;
+    showToast(`Increased ${recipe.title} to ${existing.servingsPerDay} servings/day!`);
+  } else {
+    AppState.mealPrep.meals.push({
+      prepId: 'prep-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+      recipeId: recipe.id,
+      title: recipe.title,
+      category: recipe.category,
+      subCategory: recipe.subCategory,
+      image: recipe.image,
+      servingsPerDay: servingsPerDay,
+      scale: 1.0,
+      nutrition: { ...recipe.nutrition },
+      instantPot: recipe.instantPot
+    });
+    showToast(`Added ${recipe.title} to your ${AppState.mealPrep.days || 5}-Day Meal Prep!`);
+  }
+  AppState.showingAutoSuggest = false;
+  saveMealPrep();
+  if (AppState.currentTab === 'planner') {
+    renderPlannerView();
+  }
+}
+
+function quickAddRecipeToMealPrep(id) {
+  const recipe = AppState.recipes.find(r => r.id === id);
+  if (recipe) {
+    addToMealPrep(recipe, 1);
+  }
+}
+
+function adjustMealPrepServings(prepId, delta) {
+  const item = AppState.mealPrep.meals.find(m => m.prepId === prepId);
+  if (!item) return;
+
+  item.servingsPerDay = Math.max(1, (item.servingsPerDay || 1) + delta);
+  saveMealPrep();
+  renderMealPrepSection();
+}
+
+function removeMealFromPrep(prepId) {
+  AppState.mealPrep.meals = AppState.mealPrep.meals.filter(m => m.prepId !== prepId);
+  saveMealPrep();
+  renderMealPrepSection();
+  showToast("Removed meal from prep list.");
+}
+
+function clearEntireMealPrep() {
+  if (confirm("Are you sure you want to clear your meal prep list?")) {
+    AppState.mealPrep.meals = [];
+    AppState.showingAutoSuggest = false;
+    saveMealPrep();
+    renderMealPrepSection();
+    showToast("Meal prep list cleared.");
+  }
+}
+
+function getSuggestedMealPlan(goal, targetCals, targetPro) {
+  const breakfasts = AppState.recipes.filter(r => r.category === 'Breakfast');
+  const lunches = AppState.recipes.filter(r => r.category === 'Lunch');
+  const dinners = AppState.recipes.filter(r => r.category === 'Dinner');
+  const snacks = AppState.recipes.filter(r => r.category === 'Drinks' || r.category === 'Snacks');
+
+  if (goal === 'bulk') {
+    breakfasts.sort((a,b) => b.nutrition.calories - a.nutrition.calories);
+    lunches.sort((a,b) => b.nutrition.calories - a.nutrition.calories);
+    dinners.sort((a,b) => b.nutrition.calories - a.nutrition.calories);
+    snacks.sort((a,b) => b.nutrition.calories - a.nutrition.calories);
+  } else {
+    breakfasts.sort((a,b) => b.nutrition.proteinCalPct - a.nutrition.proteinCalPct);
+    lunches.sort((a,b) => b.nutrition.proteinCalPct - a.nutrition.proteinCalPct);
+    dinners.sort((a,b) => b.nutrition.proteinCalPct - a.nutrition.proteinCalPct);
+    snacks.sort((a,b) => b.nutrition.proteinCalPct - a.nutrition.proteinCalPct);
+  }
+
+  const bTop = breakfasts.slice(0, 15);
+  const lTop = lunches.slice(0, 15);
+  const dTop = dinners.slice(0, 15);
+  const sTop = snacks.slice(0, 15);
+  if (!bTop.length || !lTop.length || !dTop.length || !sTop.length) {
+    return [];
+  }
+
+  let bestCombo = null;
+  let bestDiff = 999999;
+
+  for (let i = 0; i < 40; i++) {
+    const b = bTop[Math.floor(Math.random() * bTop.length)];
+    const l = lTop[Math.floor(Math.random() * lTop.length)];
+    const d = dTop[Math.floor(Math.random() * dTop.length)];
+    const s = sTop[Math.floor(Math.random() * sTop.length)];
+
+    const cals = b.nutrition.calories + l.nutrition.calories + d.nutrition.calories + s.nutrition.calories;
+    const pro = b.nutrition.protein + l.nutrition.protein + d.nutrition.protein + s.nutrition.protein;
+
+    const diff = Math.abs(cals - targetCals) + (pro < targetPro ? (targetPro - pro) * 15 : 0);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      bestCombo = [b, l, d, s];
+    }
+  }
+
+  AppState.suggestedPlanCache = bestCombo || [breakfasts[0], lunches[0], dinners[0], snacks[0]];
+  return AppState.suggestedPlanCache;
+}
+
+function triggerAutoSuggestPlan() {
+  const stats = calculateBmrAndTargets();
+  getSuggestedMealPlan(AppState.userProfile.goal, stats.targetCals, stats.targetPro);
+  AppState.showingAutoSuggest = true;
+  renderMealPrepSection();
+  showToast("✨ Generated fresh personalized meal suggestions!");
+}
+
+function acceptSuggestedMealPlan() {
+  if (!AppState.suggestedPlanCache || AppState.suggestedPlanCache.length === 0) {
+    const stats = calculateBmrAndTargets();
+    getSuggestedMealPlan(AppState.userProfile.goal, stats.targetCals, stats.targetPro);
+  }
+
+  AppState.suggestedPlanCache.forEach(r => {
+    addToMealPrep(r, 1);
+  });
+
+  AppState.showingAutoSuggest = false;
+  renderMealPrepSection();
+  showToast(`✅ Locked in ${AppState.suggestedPlanCache.length} meals for ${AppState.mealPrep.days || 5} days!`);
+}
+
+function exportMealPrepToShoppingList() {
+  if (!AppState.mealPrep.meals || AppState.mealPrep.meals.length === 0) {
+    showToast("Your meal prep list is empty! Add or auto-suggest meals first.");
+    return;
+  }
+
+  const days = AppState.mealPrep.days || 5;
+  let addedCount = 0;
+
+  AppState.mealPrep.meals.forEach(m => {
+    const orig = AppState.recipes.find(r => r.id === m.recipeId);
+    if (!orig) return;
+
+    const totalServings = (m.servingsPerDay || 1) * days;
+    orig.ingredients.forEach(ing => {
+      AppState.shoppingList.push({
+        id: 'shop-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+        text: scaleQuantityText(ing, totalServings),
+        recipeTitle: `${orig.title} (${days}-Day Meal Prep: ${totalServings} servings)`,
+        completed: false
+      });
+      addedCount++;
+    });
+  });
+
+  saveShoppingList();
+  showToast(`🛒 Exported ${addedCount} batch ingredients for ${days} days to your Shopping List!`);
+}
+
+function renderMealPrepSection() {
+  const container = document.getElementById('meal-prep-container');
   if (!container) return;
 
-  const slots = ['breakfast', 'lunch', 'dinner', 'snacks'];
-  const slotLabels = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snacks: 'Snacks & Drinks' };
+  const stats = calculateBmrAndTargets();
+  const days = stats.days;
+  const meals = AppState.mealPrep.meals || [];
 
-  let totalCals = 0;
-  let totalPro = 0;
-  let totalCarbs = 0;
-  let totalFat = 0;
-
-  let html = '';
-
-  slots.forEach(slot => {
-    const items = AppState.mealPlan[slot] || [];
-    let slotCals = 0;
-    let slotPro = 0;
-
-    items.forEach(it => {
-      slotCals += it.nutrition.calories;
-      slotPro += it.nutrition.protein;
-      totalCals += it.nutrition.calories;
-      totalPro += it.nutrition.protein;
-      totalCarbs += it.nutrition.carbs;
-      totalFat += it.nutrition.fat;
+  if (meals.length === 0 || AppState.showingAutoSuggest) {
+    // Show Auto-Suggest View
+    const suggested = (AppState.suggestedPlanCache && AppState.suggestedPlanCache.length)
+      ? AppState.suggestedPlanCache
+      : getSuggestedMealPlan(AppState.userProfile.goal, stats.targetCals, stats.targetPro);
+    if (!suggested.length || suggested.some((r) => !r || !r.nutrition)) {
+      container.innerHTML = "";
+      return;
+    }
+    let sugCals = 0;
+    let sugPro = 0;
+    let sugCarbs = 0;
+    let sugFat = 0;
+    suggested.forEach(r => {
+      sugCals += r.nutrition.calories;
+      sugPro += r.nutrition.protein;
+      sugCarbs += r.nutrition.carbs;
+      sugFat += r.nutrition.fat;
     });
 
-    html += `
-      <div class="glass-panel p-5 rounded-2xl border border-slate-800">
-        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+    container.innerHTML = `
+      <div class="glass-panel p-6 rounded-2xl border border-emerald-500/30 bg-gradient-to-b from-emerald-950/20 to-slate-900/60 space-y-5">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
           <div>
-            <h3 class="font-heading font-bold text-lg text-slate-100">${slotLabels[slot]}</h3>
-            <span class="text-xs text-slate-400">${items.length} items • ${slotCals} kcal • ${Math.round(slotPro)}g Protein</span>
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5 inline-flex mb-1.5">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-emerald-400"></i> Auto-Suggested Halal Plan
+            </span>
+            <h3 class="font-heading font-black text-xl text-white">Curated Meal Prep for Your ${AppState.userProfile.goal === 'bulk' ? 'Lean Muscle Gain' : 'Fat Loss'} Target</h3>
+            <p class="text-xs text-slate-300 mt-1">
+              You haven't added meals yet. We've handpicked these 4 complementary Halal recipes to hit your exact <strong>${stats.targetCals} kcal</strong> and <strong>${stats.targetPro}g protein</strong> target!
+            </p>
           </div>
-          <button onclick="switchTab('recipes')" class="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-semibold hover:bg-emerald-500/20 transition flex items-center gap-1.5">
-            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Recipe
-          </button>
+          <div class="flex items-center gap-2">
+            <button onclick="triggerAutoSuggestPlan()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition flex items-center gap-1.5">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Shuffle
+            </button>
+            <button onclick="acceptSuggestedMealPlan()" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/25 transition flex items-center gap-1.5">
+              <i data-lucide="check" class="w-4 h-4"></i> Accept & Add to ${days}-Day Prep
+            </button>
+          </div>
         </div>
 
-        <div class="divide-y divide-slate-800/60 mt-3">
-          ${items.length === 0 ? `
-            <p class="py-4 text-center text-xs text-slate-500 italic">No meals added for ${slotLabels[slot]} yet.</p>
-          ` : items.map(item => `
-            <div class="py-2.5 flex items-center justify-between gap-3">
-              <div class="flex items-center gap-3">
-                <img src="${item.image}" alt="" class="w-11 h-11 rounded-lg object-cover bg-slate-900 border border-slate-700">
-                <div>
-                  <h4 class="font-semibold text-sm text-slate-200 line-clamp-1">${item.title}</h4>
-                  <span class="text-xs text-slate-400 font-mono">${item.nutrition.calories} kcal | ${item.nutrition.protein}g P | x${item.scale}</span>
+        <!-- Suggested Daily Macro Summary Bar -->
+        <div class="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div class="flex items-center gap-4">
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase font-bold">Plan Calories:</span>
+              <span class="font-heading font-black text-amber-300 text-base">${sugCals} <span class="text-xs font-normal text-slate-400">/ ${stats.targetCals} kcal</span></span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase font-bold">Plan Protein:</span>
+              <span class="font-heading font-black text-emerald-300 text-base">${Math.round(sugPro)}g <span class="text-xs font-normal text-slate-400">/ ${stats.targetPro}g</span></span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase font-bold">Carbs:</span>
+              <span class="font-heading font-bold text-blue-300 text-sm">${Math.round(sugCarbs)}g</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase font-bold">Fat:</span>
+              <span class="font-heading font-bold text-rose-300 text-sm">${Math.round(sugFat)}g</span>
+            </div>
+          </div>
+          <span class="px-2.5 py-1 rounded-lg text-xs font-bold ${Math.abs(sugCals - stats.targetCals) <= 150 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'}">
+            🎯 Match Accuracy: ${Math.round((1 - Math.abs(sugCals - stats.targetCals) / stats.targetCals) * 100)}%
+          </span>
+        </div>
+
+        <!-- 4 Suggested Cards Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          ${suggested.map((r, i) => `
+            <div class="glass-card rounded-2xl overflow-hidden border border-slate-800 flex flex-col justify-between group hover:border-emerald-500/40 transition">
+              <div class="relative h-36 bg-slate-950">
+                <img src="${r.image}" alt="" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent"></div>
+                <div class="absolute top-2 left-2 flex items-center gap-1">
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-900/90 text-emerald-400 border border-emerald-500/30">
+                    Slot ${i + 1}: ${r.category}
+                  </span>
                 </div>
               </div>
-              <button onclick="removeFromMealPlan('${slot}', '${item.planId}')" class="p-1.5 text-slate-400 hover:text-rose-400 transition" title="Remove meal">
-                <i data-lucide="trash-2" class="w-4 h-4"></i>
-              </button>
+              <div class="p-3.5 flex-1 flex flex-col justify-between space-y-2">
+                <div>
+                  <h4 class="font-heading font-bold text-sm text-slate-100 group-hover:text-emerald-400 transition line-clamp-1">${r.title}</h4>
+                  <p class="text-[11px] text-slate-400 line-clamp-1">${r.subCategory || r.category}</p>
+                </div>
+                <div class="grid grid-cols-2 gap-1.5 p-2 rounded-xl bg-slate-900/90 text-center text-xs">
+                  <div>
+                    <span class="text-[10px] text-amber-400 font-bold block">Cals</span>
+                    <span class="font-mono font-bold text-amber-300 text-xs">${r.nutrition.calories}</span>
+                  </div>
+                  <div>
+                    <span class="text-[10px] text-emerald-400 font-bold block">Protein</span>
+                    <span class="font-mono font-bold text-emerald-300 text-xs">${r.nutrition.protein}g</span>
+                  </div>
+                </div>
+                <button onclick="addToMealPrep(AppState.recipes.find(rec => rec.id === '${r.id}'), 1)" class="w-full py-1.5 rounded-xl bg-slate-800 hover:bg-emerald-600 hover:text-slate-950 text-slate-200 text-xs font-bold transition flex items-center justify-center gap-1">
+                  <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add This Meal
+                </button>
+              </div>
             </div>
           `).join('')}
         </div>
       </div>
     `;
+    initLucideIcons();
+    return;
+  }
+
+  // Active Meal Prep List View
+  let dailyCals = 0;
+  let dailyPro = 0;
+  let dailyCarbs = 0;
+  let dailyFat = 0;
+
+  meals.forEach(m => {
+    const mult = m.servingsPerDay || 1;
+    dailyCals += m.nutrition.calories * mult;
+    dailyPro += m.nutrition.protein * mult;
+    dailyCarbs += m.nutrition.carbs * mult;
+    dailyFat += m.nutrition.fat * mult;
   });
 
-  container.innerHTML = html;
+  const calPct = Math.min(Math.round((dailyCals / stats.targetCals) * 100), 125);
+  const proPct = Math.min(Math.round((dailyPro / stats.targetPro) * 100), 125);
+  const calDiff = dailyCals - stats.targetCals;
 
-  const targetCals = AppState.userProfile.customTdee || 2600;
-  const weightKg = AppState.userProfile.unit === 'kg' ? AppState.userProfile.weight : AppState.userProfile.weight * 0.453592;
-  const targetPro = Math.round(weightKg * 2.2);
+  container.innerHTML = `
+    <!-- Macro Tracking Dashboard for Meal Prep -->
+    <div class="glass-panel p-5 rounded-2xl border border-slate-800 space-y-4">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <i data-lucide="pie-chart" class="w-5 h-5 text-emerald-400"></i>
+          <h3 class="font-heading font-extrabold text-lg text-white">Daily Prep Intake vs BMR Target</h3>
+        </div>
+        <div class="flex items-center gap-2 text-xs">
+          <span class="px-3 py-1 rounded-xl font-bold ${Math.abs(calDiff) <= 120 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : calDiff > 0 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'}">
+            ${Math.abs(calDiff) <= 120 ? '🎯 Perfectly On Target!' : calDiff > 0 ? `+${calDiff} kcal above target` : `${calDiff} kcal remaining`}
+          </span>
+        </div>
+      </div>
 
-  document.getElementById('plan-total-cals').innerText = totalCals;
-  document.getElementById('plan-target-cals').innerText = `${targetCals} kcal`;
-  document.getElementById('plan-total-pro').innerText = `${Math.round(totalPro)}g`;
-  document.getElementById('plan-target-pro').innerText = `${targetPro}g`;
-  document.getElementById('plan-total-carbs').innerText = `${Math.round(totalCarbs)}g`;
-  document.getElementById('plan-total-fat').innerText = `${Math.round(totalFat)}g`;
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1.5">
+          <div class="flex justify-between items-baseline text-xs">
+            <span class="text-amber-400 font-bold uppercase text-[10px]">Daily Calories</span>
+            <span class="font-mono text-slate-400">${dailyCals} / ${stats.targetCals}</span>
+          </div>
+          <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+            <div class="bg-amber-400 h-full transition-all duration-300" style="width: ${calPct}%"></div>
+          </div>
+        </div>
 
-  const calProgress = Math.min(Math.round((totalCals / targetCals) * 100), 100);
-  const proProgress = Math.min(Math.round((totalPro / targetPro) * 100), 100);
+        <div class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1.5">
+          <div class="flex justify-between items-baseline text-xs">
+            <span class="text-emerald-400 font-bold uppercase text-[10px]">Daily Protein (2.2g/kg)</span>
+            <span class="font-mono text-slate-400">${Math.round(dailyPro)}g / ${stats.targetPro}g</span>
+          </div>
+          <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+            <div class="bg-emerald-400 h-full transition-all duration-300" style="width: ${proPct}%"></div>
+          </div>
+        </div>
 
-  document.getElementById('plan-cal-bar').style.width = `${calProgress}%`;
-  document.getElementById('plan-pro-bar').style.width = `${proProgress}%`;
+        <div class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
+          <span class="text-blue-400 font-bold uppercase text-[10px] block">Daily Carbs</span>
+          <span class="font-heading font-black text-blue-300 text-lg">${Math.round(dailyCarbs)}g</span>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
+          <span class="text-rose-400 font-bold uppercase text-[10px] block">Daily Fat</span>
+          <span class="font-heading font-black text-rose-300 text-lg">${Math.round(dailyFat)}g</span>
+        </div>
+      </div>
+
+      <!-- Batch Multiplier Alert -->
+      <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+        <div class="flex items-center gap-2">
+          <i data-lucide="layers" class="w-4 h-4 text-amber-400"></i>
+          <span class="text-amber-200">
+            <strong>${days}-Day Batch Total:</strong> ${meals.reduce((acc, m) => acc + (m.servingsPerDay || 1) * days, 0)} containers • ${(dailyCals * days).toLocaleString()} total kcal • ${(Math.round(dailyPro * days)).toLocaleString()}g total protein
+          </span>
+        </div>
+        <button onclick="exportMealPrepToShoppingList()" class="text-amber-300 hover:text-white font-bold flex items-center gap-1">
+          <i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i> Export ${days}-Day Ingredients →
+        </button>
+      </div>
+    </div>
+
+    <!-- Active Meals in Prep List -->
+    <div class="space-y-3">
+      <div class="flex items-center justify-between">
+        <h3 class="font-heading font-bold text-base text-white flex items-center gap-2">
+          <i data-lucide="chef-hat" class="w-5 h-5 text-emerald-400"></i>
+          Your Saved Meal Prep Items (${meals.length})
+        </h3>
+        <div class="flex items-center gap-2">
+          <button onclick="openMealPrepPickerModal()" class="px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-bold transition flex items-center gap-1">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Another Meal
+          </button>
+          <button onclick="triggerAutoSuggestPlan()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition flex items-center gap-1">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i> Auto-Suggest Combo
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        ${meals.map(item => {
+          const s = item.servingsPerDay || 1;
+          const totalServings = s * days;
+          const batchCals = item.nutrition.calories * totalServings;
+          const batchPro = item.nutrition.protein * totalServings;
+
+          return `
+            <div class="glass-panel p-4 rounded-2xl border border-slate-800 flex gap-4 relative group hover:border-emerald-500/40 transition">
+              <img src="${item.image}" alt="" class="w-24 h-24 rounded-xl object-cover bg-slate-950 flex-shrink-0 cursor-pointer" onclick="openRecipeModal('${item.recipeId}')">
+
+              <div class="flex-1 flex flex-col justify-between space-y-2">
+                <div>
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">${item.category}</span>
+                    <button onclick="removeMealFromPrep('${item.prepId}')" class="text-slate-500 hover:text-rose-400 p-1 transition" title="Remove from meal prep">
+                      <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                  </div>
+                  <h4 class="font-heading font-bold text-sm text-white line-clamp-1 cursor-pointer hover:text-emerald-400 transition" onclick="openRecipeModal('${item.recipeId}')">
+                    ${item.title}
+                  </h4>
+                  <div class="text-[11px] text-slate-400 font-mono mt-0.5">
+                    1 Serving: ${item.nutrition.calories} kcal • ${item.nutrition.protein}g Protein
+                  </div>
+                </div>
+
+                <!-- Servings & Batch Multiplier Controls -->
+                <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                  <div class="flex items-center gap-2">
+                    <span class="text-slate-400 text-[11px]">Daily:</span>
+                    <div class="flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden">
+                      <button onclick="adjustMealPrepServings('${item.prepId}', -1)" class="px-2 py-0.5 hover:bg-slate-800 text-slate-300">-</button>
+                      <span class="px-2.5 py-0.5 font-bold font-mono text-emerald-300">${s}</span>
+                      <button onclick="adjustMealPrepServings('${item.prepId}', 1)" class="px-2 py-0.5 hover:bg-slate-800 text-slate-300">+</button>
+                    </div>
+                  </div>
+
+                  <div class="text-right">
+                    <span class="text-[11px] font-bold text-amber-300 block">
+                      ${totalServings} containers (${days}d)
+                    </span>
+                    <span class="text-[10px] text-slate-400 font-mono">
+                      ${batchCals.toLocaleString()} kcal | ${batchPro.toFixed(0)}g P
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
 
   initLucideIcons();
 }
 
-function removeFromMealPlan(slot, planId) {
-  AppState.mealPlan[slot] = AppState.mealPlan[slot].filter(it => it.planId !== planId);
-  saveMealPlan();
-  renderPlannerView();
+function renderPlannerView() {
+  updateBmrCalculation();
 }
 
-function clearEntireMealPlan() {
-  if (confirm("Are you sure you want to clear today's meal plan?")) {
-    AppState.mealPlan = { breakfast: [], lunch: [], dinner: [], snacks: [] };
-    saveMealPlan();
-    renderPlannerView();
-  }
+// ================= RECIPE PICKER MODAL FOR MEAL PREP =================
+let pickerActiveCat = 'All';
+
+function openMealPrepPickerModal() {
+  const modal = document.getElementById('meal-prep-picker-modal');
+  if (!modal) return;
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  document.body.style.overflow = 'hidden';
+  filterPickerRecipes();
+  initLucideIcons();
 }
 
-function addPlanIngredientsToShoppingList() {
-  let count = 0;
-  const slots = ['breakfast', 'lunch', 'dinner', 'snacks'];
-  slots.forEach(s => {
-    AppState.mealPlan[s].forEach(item => {
-      const orig = AppState.recipes.find(r => r.id === item.recipeId);
-      if (orig) {
-        orig.ingredients.forEach(ing => {
-          AppState.shoppingList.push({
-            id: 'shop-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
-            text: scaleQuantityText(ing, item.scale),
-            recipeTitle: item.title,
-            completed: false
-          });
-          count++;
-        });
-      }
-    });
+function closeMealPrepPickerModal() {
+  const modal = document.getElementById('meal-prep-picker-modal');
+  if (!modal) return;
+
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  document.body.style.overflow = '';
+}
+
+function setPickerCategory(cat) {
+  pickerActiveCat = cat;
+  document.querySelectorAll('.picker-cat-btn').forEach(btn => {
+    if (btn.dataset.pcat === cat) {
+      btn.className = "picker-cat-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950";
+    } else {
+      btn.className = "picker-cat-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300";
+    }
   });
-
-  saveShoppingList();
-  showToast(`Added ${count} ingredients from meal plan to Shopping List!`);
+  filterPickerRecipes();
 }
 
+function filterPickerRecipes() {
+  const container = document.getElementById('picker-results-container');
+  if (!container) return;
+
+  const searchInput = document.getElementById('picker-search-input');
+  const q = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+  let list = AppState.recipes;
+  if (pickerActiveCat !== 'All') {
+    list = list.filter(r => r.category === pickerActiveCat);
+  }
+  if (q) {
+    list = list.filter(r => r.title.toLowerCase().includes(q) || r.ingredients.some(ing => ing.toLowerCase().includes(q)));
+  }
+
+  container.innerHTML = list.slice(0, 30).map(r => `
+    <div class="py-2.5 flex items-center justify-between gap-3 hover:bg-slate-900/50 p-2 rounded-xl transition">
+      <div class="flex items-center gap-3">
+        <img src="${r.image}" alt="" class="w-12 h-12 rounded-xl object-cover bg-slate-950 flex-shrink-0">
+        <div>
+          <h4 class="font-heading font-bold text-sm text-white line-clamp-1">${r.title}</h4>
+          <span class="text-xs text-slate-400 font-mono">${r.category} • ${r.nutrition.calories} kcal • ${r.nutrition.protein}g Protein</span>
+        </div>
+      </div>
+      <button onclick="addToMealPrep(AppState.recipes.find(rec => rec.id === '${r.id}'), 1)" class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-1 transition shadow">
+        <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add
+      </button>
+    </div>
+  `).join('');
+
+  initLucideIcons();
+}
 function saveMealPlan() {
   localStorage.setItem('clean_cooking_meal_plan', JSON.stringify(AppState.mealPlan));
 }
@@ -1469,32 +1984,34 @@ function setupConversionEvents() {
 
 function loadUserProfile() {
   const p = AppState.userProfile;
-  const weightInput = document.getElementById('profile-weight');
-  const goalSelect = document.getElementById('profile-goal');
-  const tdeeInput = document.getElementById('profile-tdee');
+  const genderEl = document.getElementById('prep-gender');
+  const ageEl = document.getElementById('prep-age');
+  const heightEl = document.getElementById('prep-height');
+  const weightEl = document.getElementById('prep-weight');
+  const actEl = document.getElementById('prep-activity');
+  const goalEl = document.getElementById('prep-goal');
 
-  if (weightInput) weightInput.value = p.weight;
-  if (goalSelect) goalSelect.value = p.goal;
-  if (tdeeInput) tdeeInput.value = p.customTdee || 2600;
+  if (genderEl && p.gender) genderEl.value = p.gender;
+  if (ageEl && p.age) ageEl.value = p.age;
+  if (heightEl && p.height) heightEl.value = p.height;
+  if (weightEl && p.weight) weightEl.value = p.weight;
+  if (actEl && p.activity) actEl.value = p.activity;
+  if (goalEl && p.goal) goalEl.value = p.goal;
+
+  const days = AppState.mealPrep.days || 5;
+  document.querySelectorAll('.prep-days-pill').forEach(btn => {
+    btn.className = "prep-days-pill px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white";
+  });
+  const activeBtn = document.getElementById(`prep-days-btn-${days}`);
+  if (activeBtn) {
+    activeBtn.className = "prep-days-pill px-3 py-1.5 rounded-lg text-xs font-bold transition bg-emerald-500 text-slate-950 font-extrabold shadow";
+  }
+
+  updateBmrCalculation();
 }
 
 function setupPlannerEvents() {
-  const saveBtn = document.getElementById('save-profile-btn');
-  if (saveBtn) {
-    saveBtn.addEventListener('click', () => {
-      const w = parseFloat(document.getElementById('profile-weight').value) || 80;
-      const g = document.getElementById('profile-goal').value;
-      const t = parseInt(document.getElementById('profile-tdee').value) || 2600;
-
-      AppState.userProfile.weight = w;
-      AppState.userProfile.goal = g;
-      AppState.userProfile.customTdee = t;
-
-      localStorage.setItem('clean_cooking_user_profile', JSON.stringify(AppState.userProfile));
-      showToast("Macro targets updated!");
-      renderPlannerView();
-    });
-  }
+  // Inputs have real-time oninput and onchange handlers calling updateBmrCalculation()
 }
 
 function setupShoppingListEvents() {

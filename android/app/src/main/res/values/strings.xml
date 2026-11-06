@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Clean Cooking</string>
+    <string name="title_activity_main">Clean Cooking</string>
+    <string name="package_name">app.cleancooking.halal</string>
+    <string name="custom_url_scheme">app.cleancooking.halal</string>
+</resources>

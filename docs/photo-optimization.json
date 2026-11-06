@@ -1,0 +1,10 @@
+{
+  "source": "https://clean-cooking-app.netlify.app/images/recipes/",
+  "recipe_count": 277,
+  "image_count": 277,
+  "max_edge_px": 960,
+  "jpeg_quality": 78,
+  "original_bytes": 246941062,
+  "optimized_bytes": 15924094,
+  "failed": []
+}

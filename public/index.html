@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clean Cooking — 100% Halal High-Protein Cookbook App (277 Recipes)</title>
+  <link rel="stylesheet" href="css/tailwind.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="images/icon-192.png">
+  <link rel="apple-touch-icon" href="images/icon-192.png">
+  <meta name="theme-color" content="#10b981">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <script src="js/vendor/lucide.min.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+</head>
+<body class="bg-[#090d16] text-slate-100 min-h-screen flex flex-col antialiased overflow-x-hidden selection:bg-emerald-500 selection:text-slate-950">
+
+  <!-- Top Navbar -->
+  <header class="sticky top-0 z-40 bg-[#0c1220]/90 backdrop-blur-xl border-b border-slate-800/80 shadow-lg">
+    <div class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-3 cursor-pointer shrink-0" onclick="switchTab('recipes')">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-lime-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+          <i data-lucide="flame" class="w-6 h-6 text-slate-950 fill-slate-950"></i>
+        </div>
+        <div>
+          <span class="font-heading font-black text-xl tracking-tight text-white flex items-center gap-1.5">
+            CLEAN <span class="text-emerald-400">COOKING</span>
+          </span>
+          <span class="block text-[10px] text-slate-400 uppercase tracking-widest font-semibold font-mono">
+            100% Halal • 277 Recipes • 2 Cookbooks
+          </span>
+        </div>
+      </div>
+
+      <!-- Main Navigation Tabs -->
+      <nav class="flex items-center gap-1 sm:gap-2 overflow-x-auto min-w-0 flex-1">
+        <button class="nav-tab-btn flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border transition text-emerald-400 border-emerald-500 bg-emerald-500/10" data-tab="recipes">
+          <i data-lucide="book-open" class="w-4 h-4"></i>
+          <span>Recipes (277)</span>
+        </button>
+        <button class="nav-tab-btn flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border transition text-slate-400 border-transparent hover:text-slate-200" data-tab="drinks">
+          <i data-lucide="coffee" class="w-4 h-4 text-pink-400"></i>
+          <span>Drinks & Pink Tea</span>
+        </button>
+        <button class="nav-tab-btn flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border transition text-slate-400 border-transparent hover:text-slate-200" data-tab="planner">
+          <i data-lucide="calendar-check" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">Macro Planner</span>
+          <span class="sm:hidden">Planner</span>
+        </button>
+        <button class="nav-tab-btn flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border transition text-slate-400 border-transparent hover:text-slate-200" data-tab="shopping">
+          <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">Shopping List</span>
+          <span class="sm:hidden">Shop</span>
+        </button>
+        <button class="nav-tab-btn flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border transition text-slate-400 border-transparent hover:text-slate-200" data-tab="guide">
+          <i data-lucide="sparkles" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">Guides & IP Pro</span>
+          <span class="sm:hidden">Guide</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- ================= VIEW 1: RECIPES EXPLORER ================= -->
+    <section id="view-recipes" class="tab-view space-y-6">
+      
+      <!-- Search & Filters Container -->
+      <div class="glass-panel p-4 sm:p-5 rounded-2xl space-y-4">
+        
+        <!-- Search Bar Row -->
+        <div class="flex flex-col sm:flex-row gap-3">
+          <div class="relative flex-1">
+            <i data-lucide="search" class="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input 
+              type="text" 
+              id="search-input" 
+              placeholder="Search 277 Halal recipes across both cookbooks (cutting + lean bulking, pink tea, chicken, beef)..." 
+              class="w-full pl-11 pr-10 py-3 rounded-xl bg-slate-900/90 border border-slate-700/80 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+            >
+            <button id="clear-search-btn" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-1" title="Clear search">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <!-- Sort Select -->
+          <div class="flex items-center gap-2 sm:w-60">
+            <select id="sort-select" class="w-full py-3 px-3.5 rounded-xl bg-slate-900/90 border border-slate-700/80 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 font-medium cursor-pointer">
+              <option value="default">Default Order</option>
+              <option value="protein-desc">Highest Protein First</option>
+              <option value="efficiency">Highest Protein Efficiency (g/100cal)</option>
+              <option value="calories-asc">Lowest Calories (Cutting)</option>
+              <option value="calories-desc">Highest Calories (Bulking)</option>
+              <option value="title">Alphabetical (A - Z)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Category Nav Pills -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          <button class="cat-pill-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition active-cat" data-cat="All">
+            All Halal (277)
+          </button>
+          <button class="cat-pill-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition text-pink-300" data-cat="Drinks">
+            ☕ Drinks & Pink Tea (21)
+          </button>
+          <button class="cat-pill-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition" data-cat="Breakfast">
+            🍳 Breakfast (68)
+          </button>
+          <button class="cat-pill-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition" data-cat="Lunch">
+            🥪 Lunch (52)
+          </button>
+          <button class="cat-pill-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition" data-cat="Dinner">
+            🍗 Dinner (87)
+          </button>
+          <button class="cat-pill-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition" data-cat="Snacks">
+            🍪 Snacks & Desserts (49)
+          </button>
+          <button class="cat-pill-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition flex items-center gap-1.5 text-rose-400" data-cat="Favorites">
+            <i data-lucide="heart" class="w-3.5 h-3.5 fill-rose-500 text-rose-500"></i> Saved
+          </button>
+        </div>
+
+        <!-- Dynamic Subcategory Chips -->
+        <div id="subcategory-chips-container" class="flex items-center gap-1.5 overflow-x-auto pt-2 border-t border-slate-800/60 hidden">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Macro Slider Filters & Quick Tags Row -->
+        <div class="pt-3 border-t border-slate-800/60 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          <!-- Protein Slider -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between font-semibold">
+              <span class="text-slate-400">Min. Protein:</span>
+              <span id="min-protein-display" class="text-emerald-400 font-bold font-mono">0g</span>
+            </div>
+            <input type="range" id="min-protein-slider" min="0" max="70" step="5" value="0" class="w-full accent-emerald-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+          </div>
+
+          <!-- Calories Slider -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between font-semibold">
+              <span class="text-slate-400">Max. Calories:</span>
+              <span id="max-cal-display" class="text-amber-400 font-bold font-mono">1100 kcal</span>
+            </div>
+            <input type="range" id="max-cal-slider" min="100" max="1100" step="50" value="1100" class="w-full accent-amber-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+          </div>
+
+          <!-- Quick Tags -->
+          <div class="space-y-1.5">
+            <span class="text-slate-400 font-semibold block">Cookbook & Goals:</span>
+            <div class="flex flex-wrap gap-1">
+              <button class="quick-tag-btn px-2 py-1 rounded bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 text-[11px] font-bold border border-amber-500/40" data-tag="Lean Bulking">💪 Lean Bulking (72)</button>
+              <button class="quick-tag-btn px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 text-[11px] font-bold border border-emerald-500/40" data-tag="High Protein">High Protein (30g+)</button>
+              <button class="quick-tag-btn px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-medium" data-tag="Air Fryer">Air Fryer</button>
+              <button class="quick-tag-btn px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-medium" data-tag="Meal Prep Friendly">Meal Prep</button>
+              <button class="quick-tag-btn px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-medium" data-tag="Chicken">Chicken</button>
+              <button class="quick-tag-btn px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-medium" data-tag="Beef">Beef</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Results Stats Banner -->
+      <div class="flex items-center justify-between text-xs text-slate-400 px-1">
+        <span id="results-count">Loading 277 recipes...</span>
+        <button onclick="resetFilters()" class="text-emerald-400 hover:underline font-semibold flex items-center gap-1">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset Filters
+        </button>
+      </div>
+
+      <!-- Recipes Grid Container -->
+      <div id="recipes-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <!-- Rendered by JS -->
+      </div>
+
+    </section>
+
+    <!-- ================= VIEW 2: DAILY MACRO PLANNER ================= -->
+    <section id="view-planner" class="tab-view space-y-6 hidden">
+      <div class="glass-panel p-6 rounded-2xl space-y-5 border border-slate-800">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+          <div>
+            <h2 class="font-heading font-extrabold text-2xl text-white">Daily Macro Planner & Tracker</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Track cutting deficit or lean bulking surplus across 4 daily meal slots with 2.2g protein / kg target.</p>
+          </div>
+          
+          <div class="flex items-center gap-2">
+            <button onclick="addPlanIngredientsToShoppingList()" class="px-3.5 py-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-bold hover:bg-emerald-500/20 transition flex items-center gap-1.5 shadow">
+              <i data-lucide="shopping-bag" class="w-4 h-4"></i> Export to Shopping List
+            </button>
+            <button onclick="clearEntireMealPlan()" class="px-3 py-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/20 transition flex items-center gap-1.5">
+              <i data-lucide="trash-2" class="w-4 h-4"></i> Clear Day
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
+          <div>
+            <label class="block text-slate-400 font-semibold mb-1">Body Weight (kg):</label>
+            <input type="number" id="profile-weight" value="80" class="w-full p-2 rounded-lg bg-slate-800 border border-slate-700 text-white font-mono font-bold focus:outline-none focus:border-emerald-500">
+          </div>
+          <div>
+            <label class="block text-slate-400 font-semibold mb-1">Goal:</label>
+            <select id="profile-goal" class="w-full p-2 rounded-lg bg-slate-800 border border-slate-700 text-white font-medium focus:outline-none focus:border-emerald-500">
+              <option value="cut">Fat Loss (Cutting Deficit)</option>
+              <option value="maintain">Maintenance</option>
+              <option value="bulk">Lean Muscle Gain (Bulking Surplus)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-400 font-semibold mb-1">Target Calories (TDEE):</label>
+            <input type="number" id="profile-tdee" value="2600" class="w-full p-2 rounded-lg bg-slate-800 border border-slate-700 text-white font-mono font-bold focus:outline-none focus:border-emerald-500">
+          </div>
+          <div class="flex items-end">
+            <button id="save-profile-btn" class="w-full py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold transition">
+              Update Targets
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Daily Macro Progress Dashboard -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
+          <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
+            <div class="flex justify-between items-baseline">
+              <span class="text-xs uppercase font-bold text-amber-400">Calories</span>
+              <span id="plan-target-cals" class="text-[11px] text-slate-400 font-mono">2600 kcal</span>
+            </div>
+            <div class="flex items-baseline gap-1">
+              <span id="plan-total-cals" class="font-heading font-black text-2xl text-amber-300">0</span>
+              <span class="text-xs text-slate-400">kcal</span>
+            </div>
+            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+              <div id="plan-cal-bar" class="bg-amber-400 h-full w-0 transition-all duration-500 rounded-full"></div>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
+            <div class="flex justify-between items-baseline">
+              <span class="text-xs uppercase font-bold text-emerald-400">Protein (2.2g/kg)</span>
+              <span id="plan-target-pro" class="text-[11px] text-slate-400 font-mono">176g</span>
+            </div>
+            <div class="flex items-baseline gap-1">
+              <span id="plan-total-pro" class="font-heading font-black text-2xl text-emerald-300">0g</span>
+            </div>
+            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+              <div id="plan-pro-bar" class="bg-emerald-400 h-full w-0 transition-all duration-500 rounded-full"></div>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
+            <span class="text-xs uppercase font-bold text-blue-400 block">Total Carbs</span>
+            <div class="flex items-baseline gap-1">
+              <span id="plan-total-carbs" class="font-heading font-black text-2xl text-blue-300">0g</span>
+            </div>
+            <span class="text-[11px] text-slate-500 block">Sustained energy</span>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
+            <span class="text-xs uppercase font-bold text-rose-400 block">Total Fat</span>
+            <div class="flex items-baseline gap-1">
+              <span id="plan-total-fat" class="font-heading font-black text-2xl text-rose-300">0g</span>
+            </div>
+            <span class="text-[11px] text-slate-500 block">Hormonal health</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div id="planner-slots-container" class="space-y-4">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- ================= VIEW 3: SMART SHOPPING LIST ================= -->
+    <section id="view-shopping" class="tab-view space-y-6 hidden">
+      <div class="glass-panel p-6 rounded-2xl space-y-5 border border-slate-800">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+          <div>
+            <h2 class="font-heading font-extrabold text-2xl text-white">Smart Grocery Shopping List (Metric)</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Scaled recipe ingredients with metric grams & ml. Tick off items as you shop in the supermarket.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="copyShoppingListToClipboard()" class="px-3.5 py-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-bold hover:bg-emerald-500/20 transition flex items-center gap-1.5 shadow">
+              <i data-lucide="copy" class="w-4 h-4"></i> Copy to Clipboard
+            </button>
+            <button onclick="clearCompletedShoppingItems()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition flex items-center gap-1.5">
+              <i data-lucide="check-check" class="w-4 h-4"></i> Clear Checked
+            </button>
+          </div>
+        </div>
+
+        <div class="flex gap-2">
+          <input 
+            type="text" 
+            id="custom-shopping-input" 
+            placeholder="Add grocery item in metric (e.g. 500g chicken breast, 300ml almond milk, Kashmiri tea leaves)..." 
+            class="flex-1 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+          >
+          <button id="add-custom-shopping-btn" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-sm transition flex items-center gap-1.5">
+            <i data-lucide="plus" class="w-4 h-4"></i> Add
+          </button>
+        </div>
+
+        <div id="shopping-items-list" class="space-y-2 max-h-[600px] overflow-y-auto pr-1">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= VIEW 4: GUIDES & CONVERSIONS ================= -->
+    <section id="view-guide" class="tab-view space-y-6 hidden">
+      
+      <!-- Interactive Unit & Temperature Converter Card -->
+      <div class="glass-panel p-6 rounded-2xl space-y-5 border border-slate-800">
+        <h2 class="font-heading font-extrabold text-2xl text-white flex items-center gap-2">
+          <i data-lucide="calculator" class="w-6 h-6 text-emerald-400"></i>
+          Metric Cooking & Temperature Conversion Tools
+        </h2>
+        <p class="text-xs text-slate-400">Convert between fan-assisted ovens, conventional ovens, Fahrenheit, and metric grams and milliliters.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+          <!-- Oven Temp Converter -->
+          <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
+            <h3 class="font-heading font-bold text-sm text-emerald-400 flex items-center gap-1.5">
+              <i data-lucide="flame" class="w-4 h-4"></i> Oven Temperature
+            </h3>
+            <div class="space-y-2 text-xs">
+              <div>
+                <label class="block text-slate-400 font-medium mb-1">Fan-Assisted (°C):</label>
+                <input type="number" id="conv-temp-c-fan" value="180" class="w-full p-2 rounded-lg bg-slate-800 border border-slate-700 font-mono font-bold text-white focus:outline-none focus:border-emerald-500">
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-slate-400 font-medium mb-1">Conventional (°C):</label>
+                  <input type="number" id="conv-temp-c-conv" value="200" readonly class="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 font-mono text-slate-300">
+                </div>
+                <div>
+                  <label class="block text-slate-400 font-medium mb-1">Fahrenheit (°F):</label>
+                  <input type="number" id="conv-temp-f" value="350" readonly class="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 font-mono text-slate-300">
+                </div>
+              </div>
+            </div>
+            <p class="text-[11px] text-slate-500 italic">*Conventional ovens require +20°C vs fan-assisted.</p>
+          </div>
+
+          <!-- Weight Converter -->
+          <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
+            <h3 class="font-heading font-bold text-sm text-blue-400 flex items-center gap-1.5">
+              <i data-lucide="scale" class="w-4 h-4"></i> Weight (Grams / Ounces)
+            </h3>
+            <div class="space-y-2 text-xs">
+              <div>
+                <label class="block text-slate-400 font-medium mb-1">Grams (g):</label>
+                <input type="number" id="conv-weight-g" value="100" class="w-full p-2 rounded-lg bg-slate-800 border border-slate-700 font-mono font-bold text-white focus:outline-none focus:border-blue-500">
+              </div>
+              <div>
+                <label class="block text-slate-400 font-medium mb-1">Ounces (oz):</label>
+                <input type="number" id="conv-weight-oz" value="3.5" class="w-full p-2 rounded-lg bg-slate-800 border border-slate-700 font-mono font-bold text-white focus:outline-none focus:border-blue-500">
+              </div>
+            </div>
+          </div>
+
+          <!-- Metric Volume Reference Table -->
+          <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2 text-xs">
+            <h3 class="font-heading font-bold text-sm text-amber-400 flex items-center gap-1.5 mb-2">
+              <i data-lucide="cup-soda" class="w-4 h-4"></i> Metric Volume Reference
+            </h3>
+            <div class="grid grid-cols-3 gap-1 font-mono text-[11px] text-slate-300 py-1 border-b border-slate-800 font-bold text-slate-400">
+              <span>Cup</span><span>Metric</span><span>Spoons</span>
+            </div>
+            <div class="space-y-1 font-mono text-[11px]">
+              <div class="grid grid-cols-3 gap-1 py-0.5 border-b border-slate-800/40"><span>1 cup</span><span class="text-amber-300 font-bold">240 ml</span><span>16 tbsp</span></div>
+              <div class="grid grid-cols-3 gap-1 py-0.5 border-b border-slate-800/40"><span>1/2 cup</span><span class="text-amber-300 font-bold">120 ml</span><span>8 tbsp</span></div>
+              <div class="grid grid-cols-3 gap-1 py-0.5 border-b border-slate-800/40"><span>1/4 cup</span><span class="text-amber-300 font-bold">60 ml</span><span>4 tbsp</span></div>
+              <div class="grid grid-cols-3 gap-1 py-0.5"><span>1 tbsp</span><span class="text-amber-300 font-bold">15 ml</span><span>3 tsp (5ml)</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cookbook Master Halal Shopping Guide -->
+      <div class="glass-panel p-6 rounded-2xl space-y-4 border border-slate-800">
+        <h2 class="font-heading font-extrabold text-2xl text-white flex items-center gap-2">
+          <i data-lucide="shopping-cart" class="w-6 h-6 text-emerald-400"></i>
+          Master Halal Shopping & Brand Guide
+        </h2>
+        <div id="shopping-guide-accordion" class="space-y-2 pt-2">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- FAQ Section -->
+      <div class="glass-panel p-6 rounded-2xl space-y-4 border border-slate-800">
+        <h2 class="font-heading font-extrabold text-2xl text-white flex items-center gap-2">
+          <i data-lucide="help-circle" class="w-6 h-6 text-emerald-400"></i>
+          Cookbook FAQs & Halal Nutrition Principles
+        </h2>
+        <div id="faqs-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ================= RECIPE DETAIL MODAL ================= -->
+  <div id="recipe-modal" class="fixed inset-0 z-50 modal-overlay items-center justify-center p-3 sm:p-6 hidden">
+    <div class="bg-[#111827] border border-slate-700/80 rounded-3xl w-full max-w-4xl max-h-[92vh] overflow-y-auto shadow-2xl flex flex-col relative animate-fade-in">
+      
+      <!-- Modal Close Button -->
+      <button id="close-modal-btn" class="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-black/60 backdrop-blur-md text-slate-300 hover:text-white flex items-center justify-center border border-white/10 transition">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <!-- Modal Hero Section -->
+      <div class="relative w-full h-64 sm:h-80 bg-slate-950 flex-shrink-0">
+        <img id="modal-image" src="" alt="" class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-gradient-to-t from-[#111827] via-[#111827]/40 to-black/40"></div>
+        
+        <div class="absolute bottom-4 left-6 right-6">
+          <div id="modal-category-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 inline-block mb-2 shadow">
+            100% Halal
+          </div>
+          <h2 id="modal-title" class="font-heading font-black text-2xl sm:text-3xl text-white tracking-tight leading-tight">
+            Recipe Title
+          </h2>
+        </div>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 sm:p-8 space-y-6">
+
+        <!-- Nutrition Bar & Servings Scaler -->
+        <div class="p-4 sm:p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
+            <div>
+              <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold block">Servings & Metric Scale:</span>
+              <span id="modal-servings-text" class="text-sm font-bold text-slate-200">1 Serving</span>
+            </div>
+
+            <!-- Dynamic Scale Selector Buttons -->
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs text-slate-400 mr-1">Scale:</span>
+              <div id="modal-scale-buttons" class="flex gap-1">
+                <!-- Rendered by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Macros Display Grid -->
+          <div class="grid grid-cols-4 gap-2 text-center">
+            <div class="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25">
+              <span class="block text-[11px] text-amber-400 uppercase font-bold tracking-wider">Calories</span>
+              <span id="modal-cals" class="font-heading font-black text-xl text-amber-300">0</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/35">
+              <span class="block text-[11px] text-emerald-400 uppercase font-bold tracking-wider">Protein</span>
+              <span id="modal-protein" class="font-heading font-black text-xl text-emerald-300">0g</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/25">
+              <span class="block text-[11px] text-blue-400 uppercase font-bold tracking-wider">Carbs</span>
+              <span id="modal-carbs" class="font-heading font-black text-xl text-blue-300">0g</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/25">
+              <span class="block text-[11px] text-rose-400 uppercase font-bold tracking-wider">Fat</span>
+              <span id="modal-fat" class="font-heading font-black text-xl text-rose-300">0g</span>
+            </div>
+          </div>
+
+          <!-- Macro Percentage Bar -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-[11px] font-semibold text-slate-400">
+              <span class="text-emerald-400">Protein: <span id="macro-pct-pro">0%</span></span>
+              <span class="text-blue-400">Carbs: <span id="macro-pct-carb">0%</span></span>
+              <span class="text-rose-400">Fat: <span id="macro-pct-fat">0%</span></span>
+            </div>
+            <div class="w-full h-2 rounded-full bg-slate-800 flex overflow-hidden">
+              <div id="macro-bar-pro" class="bg-emerald-400 h-full transition-all duration-300"></div>
+              <div id="macro-bar-carb" class="bg-blue-400 h-full transition-all duration-300"></div>
+              <div id="macro-bar-fat" class="bg-rose-400 h-full transition-all duration-300"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recipe Modal Mode Switcher Tabs: Cooking Steps vs Instant Pot Pro -->
+        <div class="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-900 border border-slate-800">
+          <button id="tab-btn-method" class="flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition bg-emerald-500 text-slate-950 shadow">
+            <i data-lucide="chef-hat" class="w-4 h-4"></i>
+            <span>Step-by-Step Cooking & Timers</span>
+          </button>
+          <button id="tab-btn-instantpot" class="flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition bg-slate-800 text-slate-300 border border-slate-700">
+            <i data-lucide="gauge" class="w-4 h-4 text-amber-400"></i>
+            <span>Instant Pot Pro / Pressure Cooker</span>
+          </button>
+        </div>
+
+        <!-- METHOD TAB CONTENT -->
+        <div id="modal-method-section" class="grid grid-cols-1 md:grid-cols-5 gap-6">
+          
+          <!-- Ingredients Column (2 cols) -->
+          <div class="md:col-span-2 space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+              <h3 class="font-heading font-bold text-lg text-white flex items-center gap-2">
+                <i data-lucide="check-square" class="w-5 h-5 text-emerald-400"></i>
+                Metric Ingredients
+              </h3>
+            </div>
+            <p class="text-xs text-slate-400 italic">Check off ingredients as you prepare them:</p>
+            <div id="modal-ingredients-list" class="space-y-1">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+
+          <!-- Instructions Column (3 cols) with Timers & Checkboxes -->
+          <div class="md:col-span-3 space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+              <h3 class="font-heading font-bold text-lg text-white flex items-center gap-2">
+                <i data-lucide="list-checks" class="w-5 h-5 text-emerald-400"></i>
+                Method & Step Timers
+              </h3>
+            </div>
+            <div id="modal-instructions-list" class="space-y-2.5">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- INSTANT POT PRO TAB CONTENT -->
+        <div id="modal-instantpot-section" class="hidden space-y-4">
+          <!-- Rendered by JS -->
+        </div>
+
+        <!-- Chef's Tips & Notes -->
+        <div id="modal-notes-container" class="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 space-y-1.5 hidden">
+          <h4 class="font-heading font-bold text-sm text-emerald-400 flex items-center gap-2">
+            <i data-lucide="lightbulb" class="w-4 h-4"></i> Chef's Notes, Reheating & Freezing Tips
+          </h4>
+          <p id="modal-notes-text" class="text-xs text-slate-300 leading-relaxed"></p>
+        </div>
+
+        <!-- Tags -->
+        <div id="modal-tags-container" class="flex flex-wrap gap-1.5 pt-2 border-t border-slate-800/80">
+          <!-- Rendered by JS -->
+        </div>
+
+        <!-- Action Buttons Footer -->
+        <div class="pt-4 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
+          <button id="modal-add-shopping-btn" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-sm transition flex items-center gap-2 shadow-lg shadow-emerald-500/20">
+            <i data-lucide="shopping-cart" class="w-4 h-4"></i> Add to Shopping List
+          </button>
+
+          <!-- Add to Meal Plan Dropdown -->
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-400 font-semibold">Plan for today:</span>
+            <button class="plan-slot-add-btn px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition" data-slot="breakfast">Breakfast</button>
+            <button class="plan-slot-add-btn px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition" data-slot="lunch">Lunch</button>
+            <button class="plan-slot-add-btn px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition" data-slot="dinner">Dinner</button>
+            <button class="plan-slot-add-btn px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition" data-slot="snacks">Drink / Snack</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/80 bg-[#090d16] py-6 text-center text-xs text-slate-500 mt-12">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <p>Clean Cooking App • 277 100% Halal Recipes • The Ultimate High-Protein Chef & Lean Bulking Guides.</p>
+      <p class="font-mono text-emerald-400/80">Strictly Metric Units • Instant Pot Pro Settings • Interactive Step Timers</p>
+    </div>
+  </footer>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

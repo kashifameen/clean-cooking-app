@@ -1,0 +1,25 @@
+node_modules/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.DS_Store
+
+# Android build output and machine-local SDK path. No keystores.
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/captures/
+android/.idea/
+*.iml
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+*.keystore
+*.jks
+*.apk
+*.aab
+*.idsig
+
+# Generated web copy, if a sync script creates one.
+www/

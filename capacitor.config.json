@@ -1,0 +1,14 @@
+{
+  "appId": "app.cleancooking.halal",
+  "appName": "Clean Cooking",
+  "webDir": "public",
+  "server": {
+    "androidScheme": "https",
+    "hostname": "localhost"
+  },
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  }
+}

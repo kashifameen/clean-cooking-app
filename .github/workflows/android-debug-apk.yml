@@ -1,0 +1,45 @@
+name: Android debug APK
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  assemble-debug:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install SDK packages used by the project
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Install Python test dependency
+        run: pip install flask
+
+      - name: Data tests
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+
+      - name: Build debug APK
+        run: |
+          npm ci
+          npm run test:scale
+          npm run android:debug
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: clean-cooking-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error

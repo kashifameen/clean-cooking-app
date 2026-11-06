@@ -24,7 +24,7 @@ Opening `public/index.html` as a `file://` URL cannot load the recipe JSON. Use 
 | | |
 | --- | --- |
 | Package | `app.cleancooking.halal` |
-| Version | `1.1.0` (`versionCode` 4) |
+| Version | `1.1.1` (`versionCode` 5) |
 | Min / target SDK | 23 / 35 |
 | Wrapper | Capacitor 7, web assets in `public/` |
 | Distribution build | **Release-signed and not debuggable.** This is the APK to send to friends. It is not a Google Play upload. |
@@ -77,7 +77,7 @@ Recipe photos on the public site were about 235.5 MB. This repo stores JPEG thum
 
 The only runtime network fallback is the Unsplash image used when a recipe photo fails to load (`onerror` in `public/js/app.js`). Core browsing, search, recipe details, step timers, serving scale, meal planning, shopping, and guides do not need that image.
 
-On a phone, the top tabs scroll sideways inside the header (`overflow-x-auto`). The page itself does not slide sideways. Swipe that tab row to reach Drinks, Macro Planner, Shopping, and Guides.
+On a narrow screen the five primary tabs wrap into a grid under the title, so Recipes, Drinks, Meal Prep, Shopping, and Guides all stay on screen. Wider windows put them in one wrapping row. The page does not slide sideways to reach a tab.
 
 The service worker caches the app shell, JSON, icons, fonts, CSS, and Lucide. It does not cache recipe photos or the Unsplash fallback. Inside the APK the photos are already local files.
 

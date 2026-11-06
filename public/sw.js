@@ -1,4 +1,4 @@
-const CACHE_NAME = 'clean-cooking-v6';
+const CACHE_NAME = 'clean-cooking-v7';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -40,6 +40,11 @@ self.addEventListener('activate', (event) => {
         keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
       );
     }).then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
+      .then((clients) => Promise.all(clients.map((client) => {
+        if (client.url && client.navigate) return client.navigate(client.url);
+        return undefined;
+      })))
   );
 });
 

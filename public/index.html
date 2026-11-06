@@ -32,18 +32,18 @@
 
   <!-- Top Navbar -->
   <header class="sticky top-0 z-40 bg-[#0c1220]/90 backdrop-blur-xl border-b border-slate-800/80 shadow-lg">
-    <div class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+    <div class="app-header-bar">
       
       <!-- Brand Logo -->
-      <div class="flex items-center gap-3 cursor-pointer shrink-0" onclick="switchTab('recipes')">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-lime-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+      <div class="app-brand flex items-center gap-3 cursor-pointer min-w-0" onclick="switchTab('recipes')">
+        <div class="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-tr from-emerald-600 to-lime-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
           <i data-lucide="flame" class="w-6 h-6 text-slate-950 fill-slate-950"></i>
         </div>
-        <div>
-          <span class="font-heading font-black text-xl tracking-tight text-white flex items-center gap-1.5">
+        <div class="min-w-0">
+          <span class="font-heading font-black text-xl tracking-tight text-white flex items-center gap-1.5 flex-wrap">
             CLEAN <span class="text-emerald-400">COOKING</span>
           </span>
-          <span class="block text-[10px] text-slate-400 uppercase tracking-widest font-semibold font-mono">
+          <span class="brand-tagline block text-[10px] text-slate-400 uppercase tracking-widest font-semibold font-mono">
             100% Halal • 277 Recipes • App Made by Kash
           </span>
         </div>
@@ -56,7 +56,7 @@
       </div>
 
       <!-- Main Navigation Tabs -->
-      <nav class="flex items-center gap-1 sm:gap-2 overflow-x-auto min-w-0 flex-1">
+      <nav class="app-tabs" aria-label="Primary">
         <button class="nav-tab-btn flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border transition text-emerald-400 border-emerald-500 bg-emerald-500/10" data-tab="recipes">
           <i data-lucide="book-open" class="w-4 h-4"></i>
           <span>Recipes (277)</span>
@@ -122,7 +122,7 @@
         </div>
 
         <!-- Category Nav Pills -->
-        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+        <div class="flex items-center gap-1.5 flex-wrap pb-1">
           <button class="cat-pill-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition active-cat" data-cat="All">
             All Halal (277)
           </button>
@@ -150,7 +150,7 @@
         </div>
 
         <!-- Dynamic Subcategory Chips -->
-        <div id="subcategory-chips-container" class="flex items-center gap-1.5 overflow-x-auto pt-2 border-t border-slate-800/60 hidden">
+        <div id="subcategory-chips-container" class="flex items-center gap-1.5 flex-wrap pt-2 border-t border-slate-800/60 hidden">
           <!-- Populated by JS -->
         </div>
 
@@ -739,7 +739,7 @@
           <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
           <input type="text" id="picker-search-input" placeholder="Search by name, ingredient, chicken, rice..." oninput="filterPickerRecipes()" class="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500">
         </div>
-        <div class="flex items-center gap-1.5 overflow-x-auto">
+        <div class="flex items-center gap-1.5 flex-wrap">
           <button onclick="setPickerCategory('All')" class="picker-cat-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950" data-pcat="All">All</button>
           <button onclick="setPickerCategory('Breakfast')" class="picker-cat-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300" data-pcat="Breakfast">Breakfast</button>
           <button onclick="setPickerCategory('Lunch')" class="picker-cat-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300" data-pcat="Lunch">Lunch</button>

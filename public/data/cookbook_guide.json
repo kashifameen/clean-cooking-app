@@ -1,0 +1,178 @@
+{
+  "tdee_guide": {
+    "title": "Calculating Your Goals & Macros",
+    "description": "To gain, lose or maintain weight, you need to know your Total Daily Energy Expenditure (TDEE).",
+    "steps": [
+      "1. Calculate your TDEE using an online calculator (e.g. tdeecalculator.org).",
+      "2. For Fat Loss: Create a moderate 200-400 calorie deficit below your TDEE.",
+      "3. Set Protein Target: Multiply body weight in kg by 2.0 to 2.2g (or ~1g per lb of body weight).",
+      "4. Balance Carbs & Fat: Aim roughly for 40% Carbs, 30% Fat, 30% Protein, tailored to what keeps you feeling energized and satiated."
+    ],
+    "example": {
+      "name": "Timmy",
+      "profile": "23 yrs old, 6ft (183cm), 93kg (205lbs), workouts 4x/week, goal: lose 6kg.",
+      "tdee": 3000,
+      "deficit_calories": "2600 - 2800 kcal/day",
+      "daily_protein": "204g protein/day (93kg * 2.2g)"
+    }
+  },
+  "conversion_chart": {
+    "temperatures": [
+      {
+        "fahrenheit": "300\u00b0F",
+        "celsius": "150\u00b0C",
+        "fan_assisted": "150\u00b0C",
+        "conventional": "170\u00b0C"
+      },
+      {
+        "fahrenheit": "325\u00b0F",
+        "celsius": "160\u00b0C",
+        "fan_assisted": "160\u00b0C",
+        "conventional": "180\u00b0C"
+      },
+      {
+        "fahrenheit": "350\u00b0F",
+        "celsius": "180\u00b0C",
+        "fan_assisted": "180\u00b0C",
+        "conventional": "200\u00b0C"
+      },
+      {
+        "fahrenheit": "375\u00b0F",
+        "celsius": "190\u00b0C",
+        "fan_assisted": "190\u00b0C",
+        "conventional": "210\u00b0C"
+      },
+      {
+        "fahrenheit": "400\u00b0F",
+        "celsius": "200\u00b0C",
+        "fan_assisted": "200\u00b0C",
+        "conventional": "220\u00b0C"
+      },
+      {
+        "fahrenheit": "425\u00b0F",
+        "celsius": "220\u00b0C",
+        "fan_assisted": "220\u00b0C",
+        "conventional": "240\u00b0C"
+      }
+    ],
+    "weights": [
+      {
+        "metric": "15g",
+        "imperial": "1/2 oz"
+      },
+      {
+        "metric": "30g",
+        "imperial": "1 oz"
+      },
+      {
+        "metric": "60g",
+        "imperial": "2 oz"
+      },
+      {
+        "metric": "90g",
+        "imperial": "3 oz"
+      },
+      {
+        "metric": "100g",
+        "imperial": "3.5 oz"
+      },
+      {
+        "metric": "150g",
+        "imperial": "5.3 oz"
+      },
+      {
+        "metric": "200g",
+        "imperial": "7 oz"
+      },
+      {
+        "metric": "400g",
+        "imperial": "14 oz"
+      },
+      {
+        "metric": "600g",
+        "imperial": "21 oz"
+      },
+      {
+        "metric": "800g",
+        "imperial": "28 oz"
+      },
+      {
+        "metric": "900g",
+        "imperial": "32 oz"
+      },
+      {
+        "metric": "1kg",
+        "imperial": "35 oz"
+      }
+    ],
+    "volumes": [
+      {
+        "cup": "1 cup",
+        "metric": "240 ml",
+        "tbsp": "16 tbsp"
+      },
+      {
+        "cup": "3/4 cup",
+        "metric": "180 ml",
+        "tbsp": "12 tbsp"
+      },
+      {
+        "cup": "2/3 cup",
+        "metric": "160 ml",
+        "tbsp": "11 tbsp"
+      },
+      {
+        "cup": "1/2 cup",
+        "metric": "120 ml",
+        "tbsp": "8 tbsp"
+      },
+      {
+        "cup": "1/3 cup",
+        "metric": "80 ml",
+        "tbsp": "5.5 tbsp"
+      },
+      {
+        "cup": "1/4 cup",
+        "metric": "60 ml",
+        "tbsp": "4 tbsp"
+      },
+      {
+        "cup": "1/8 cup",
+        "metric": "30 ml",
+        "tbsp": "2 tbsp"
+      },
+      {
+        "cup": "1/16 cup",
+        "metric": "15 ml",
+        "tbsp": "1 tbsp"
+      },
+      {
+        "cup": "1/48 cup",
+        "metric": "5 ml",
+        "tbsp": "1 tsp"
+      }
+    ]
+  },
+  "faqs": [
+    {
+      "q": "Do I need protein powder?",
+      "a": "No, but it's an absolute game-changer for effortlessly hitting protein goals without excess calories. One bag of vanilla and chocolate whey covers nearly all sweet recipes."
+    },
+    {
+      "q": "Do I need an air fryer?",
+      "a": "Ovens work perfectly fine for all recipes (add 20\u00b0C/36\u00b0F if using conventional oven with no fan). Air fryers are faster, crisp more evenly, and save energy."
+    },
+    {
+      "q": "How do I prevent digestive issues on high protein?",
+      "a": "Fibre! In particular insoluble fibre found in oats, berries, chia seeds, vegetables and whole grains. Aim for 30-40g of fibre daily to keep digestion effortless."
+    },
+    {
+      "q": "Can I freeze these recipes?",
+      "a": "Yes! Breakfast sandwiches, waffles, pancakes, burritos, Jamaican patties, chicken tenders, and pizza bagels freeze exceptionally well. Wrap in foil, reheat by microwaving 1-2 mins to defrost then air frying or toasting for crispiness."
+    },
+    {
+      "q": "Why do my macros vary slightly from the book?",
+      "a": "Different brands and regional variations have slight variances in calorie and macro values. The recipes use generic staple ingredients calculated via MyFitnessPal."
+    }
+  ]
+}

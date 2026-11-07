@@ -1,0 +1,458 @@
+{
+  "meats": [
+    {
+      "item": "Boneless, skinless chicken breast",
+      "source": "Generic"
+    },
+    {
+      "item": "Boneless, skinless chicken thighs",
+      "source": "Generic"
+    },
+    {
+      "item": "Chicken Tenderloins",
+      "source": "Generic"
+    },
+    {
+      "item": "Chicken Sausages",
+      "source": "Musclefood or Heck from Tesco"
+    },
+    {
+      "item": "Deli plain cooked chicken slices",
+      "source": "Generic or Homemade"
+    },
+    {
+      "item": "Fridge raiders",
+      "source": "Most supermarkets - deli snacks"
+    },
+    {
+      "item": "Turkey bacon rashers",
+      "source": "Local halal supermarkets or online"
+    },
+    {
+      "item": "Beef - Flank steak or Fillet steak",
+      "source": "Butchers or Costco"
+    },
+    {
+      "item": "Beef - 10% and 5% ground beef",
+      "source": "Generic"
+    },
+    {
+      "item": "Pork - Bacon Medallions or Shortcut bacon",
+      "source": "Aldi"
+    },
+    {
+      "item": "Pork - Smoked back bacon",
+      "source": "Aldi"
+    },
+    {
+      "item": "Pork - 50% Reduced Fat cumberland sausages",
+      "source": "Tesco"
+    }
+  ],
+  "eggs_and_dairy": [
+    {
+      "item": "Large eggs",
+      "source": "Generic"
+    },
+    {
+      "item": "Two chicks liquid egg whites",
+      "source": "Tesco"
+    },
+    {
+      "item": "2% milk / Semi-skimmed milk",
+      "source": "Generic"
+    },
+    {
+      "item": "Unsweetened almond milk",
+      "source": "Generic"
+    },
+    {
+      "item": "Flora light butter",
+      "source": "Tesco"
+    },
+    {
+      "item": "Unsalted butter",
+      "source": "Generic"
+    },
+    {
+      "item": "0% fat Greek yoghurt",
+      "source": "Generic (Fage brand recommended)"
+    },
+    {
+      "item": "0% fat natural yoghurt",
+      "source": "Generic"
+    },
+    {
+      "item": "Arla 0% fat Vanilla Skyr",
+      "source": "Tesco"
+    },
+    {
+      "item": "0% fat cottage cheese",
+      "source": "Tesco, Aldi, Lidl"
+    },
+    {
+      "item": "Fat free Quark",
+      "source": "Tesco (next to cottage cheese)"
+    },
+    {
+      "item": "Ricotta cheese",
+      "source": "Generic"
+    },
+    {
+      "item": "Parmesan cheese",
+      "source": "Generic"
+    },
+    {
+      "item": "50% reduced fat grated cheddar",
+      "source": "Tesco, Aldi, Lidl"
+    },
+    {
+      "item": "50% reduced fat mozzarella ball",
+      "source": "Tesco, Aldi, Lidl"
+    },
+    {
+      "item": "Reduced fat halloumi",
+      "source": "Tesco, Aldi, Lidl"
+    },
+    {
+      "item": "Light cheese singles",
+      "source": "Tesco, Aldi, Lidl"
+    },
+    {
+      "item": "Cheesestrings (Strings & things)",
+      "source": "Tesco, Aldi, Lidl"
+    },
+    {
+      "item": "Light laughing cow cheese triangles",
+      "source": "Tesco, Aldi"
+    },
+    {
+      "item": "Light babybel",
+      "source": "Tesco"
+    },
+    {
+      "item": "Philadelphia lightest 45% less fat cream cheese",
+      "source": "Tesco"
+    },
+    {
+      "item": "Elmlea single light cream",
+      "source": "Tesco"
+    },
+    {
+      "item": "Light squirty cream",
+      "source": "Tesco, Lidl"
+    }
+  ],
+  "breads_and_wraps": [
+    {
+      "item": "Wholemeal medium sliced bread",
+      "source": "Tesco"
+    },
+    {
+      "item": "Aldi protein tortillas (10g protein each)",
+      "source": "Aldi"
+    },
+    {
+      "item": "Carbzone Low carb tortillas (112 cals each)",
+      "source": "carbzone.co.uk"
+    },
+    {
+      "item": "Weight Watchers low calorie tortillas (120 cals each)",
+      "source": "Tesco"
+    },
+    {
+      "item": "Free-from gluten free tortillas (93 cals each)",
+      "source": "Tesco"
+    },
+    {
+      "item": "Mini tortillas",
+      "source": "Tesco, Aldi"
+    },
+    {
+      "item": "High protein sandwich thins (8g protein each)",
+      "source": "Aldi"
+    },
+    {
+      "item": "Deli Kitchen Greek style flatbreads",
+      "source": "Tesco"
+    },
+    {
+      "item": "New York Bagels (10g protein each)",
+      "source": "Tesco"
+    },
+    {
+      "item": "New York Bagel Thins",
+      "source": "Tesco"
+    },
+    {
+      "item": "Brioche burger buns (159 cals each)",
+      "source": "Aldi, Lidl"
+    },
+    {
+      "item": "English Muffins",
+      "source": "Tesco, Aldi, Lidl"
+    }
+  ],
+  "sauces_and_cooking": [
+    {
+      "item": "Reduced sugar Ketchup, BBQ, Sweet Chilli sauce",
+      "source": "Tesco"
+    },
+    {
+      "item": "Sriracha, Burger Sauce, Dijon mustard",
+      "source": "Tesco, Aldi, Lidl"
+    },
+    {
+      "item": "Franks Red Hot, Franks Buffalo sauce",
+      "source": "Tesco"
+    },
+    {
+      "item": "Lighter than light Mayo",
+      "source": "Tesco, Aldi, Lidl"
+    },
+    {
+      "item": "Light & Dark soy sauce",
+      "source": "Tesco"
+    },
+    {
+      "item": "Smooth tomato sauce, Pizza sauce, Pasta sauce",
+      "source": "Tesco"
+    },
+    {
+      "item": "Chilli con carne jar sauce mix",
+      "source": "Aldi, Lidl"
+    },
+    {
+      "item": "Cooking wines - Rice wine, Apple cider vinegar, Mirin",
+      "source": "Tesco"
+    },
+    {
+      "item": "Pastes - Tomato, Garlic, Chipotle, Gochujang",
+      "source": "Tesco"
+    },
+    {
+      "item": "Spinach pesto",
+      "source": "Tesco"
+    }
+  ],
+  "produce_and_frozen": [
+    {
+      "item": "Red Apples (Gala or Braeburn)",
+      "source": "Generic"
+    },
+    {
+      "item": "Bananas, medium",
+      "source": "Generic"
+    },
+    {
+      "item": "Fresh berries (Strawberries, Blueberries, Raspberries)",
+      "source": "Generic"
+    },
+    {
+      "item": "Lemons & Limes",
+      "source": "Generic"
+    },
+    {
+      "item": "Mangoes",
+      "source": "Generic (Halal markets best)"
+    },
+    {
+      "item": "Avocado, medium (check stub for ripeness)",
+      "source": "Generic"
+    },
+    {
+      "item": "Baby spinach",
+      "source": "Generic"
+    },
+    {
+      "item": "Potatoes (Maris Piper or Russet)",
+      "source": "Tesco"
+    },
+    {
+      "item": "Salad veg: Tomatoes, Iceberg lettuce, Cucumbers, Carrots, Cabbage",
+      "source": "Generic"
+    },
+    {
+      "item": "Green Beans",
+      "source": "Tesco, Aldi"
+    },
+    {
+      "item": "Capsicum / Bell peppers",
+      "source": "Generic"
+    },
+    {
+      "item": "Red chilli peppers",
+      "source": "Tesco, Aldi, Lidl"
+    },
+    {
+      "item": "Fresh herbs: Parsley, Coriander, Mint, Dill, Chives",
+      "source": "Tesco, Aldi, Lidl"
+    },
+    {
+      "item": "Frozen Blueberries, Strawberries, Raspberries, Mixed Berries, Mango, Pineapple",
+      "source": "Tesco, Aldi"
+    },
+    {
+      "item": "Frozen Mixed Vegetables",
+      "source": "Tesco"
+    }
+  ],
+  "pantry_and_grains": [
+    {
+      "item": "Basmati white rice",
+      "source": "Generic"
+    },
+    {
+      "item": "Rolled oats / Quick porridge oats",
+      "source": "Generic"
+    },
+    {
+      "item": "Plain flour & Self-Raising flour",
+      "source": "Generic"
+    },
+    {
+      "item": "Pasta - Macaroni, Penne",
+      "source": "Tesco, Aldi, Lidl"
+    },
+    {
+      "item": "Pasta - Fettuccine or Linguine",
+      "source": "Sainsbury's / Tesco"
+    },
+    {
+      "item": "Amoy straight-to-wok Medium noodles",
+      "source": "Tesco"
+    },
+    {
+      "item": "Chia seeds",
+      "source": "Aldi, Lidl"
+    },
+    {
+      "item": "Corn Flakes & Panko Breadcrumbs",
+      "source": "Generic / Tesco"
+    },
+    {
+      "item": "Popcorn kernels & Rice cakes",
+      "source": "Tesco, Aldi"
+    },
+    {
+      "item": "Vegetable oil, Olive oil, Sesame oil",
+      "source": "Tesco, Aldi"
+    },
+    {
+      "item": "Fry Light butter spray & Olive oil spray",
+      "source": "Tesco, Aldi, Lidl"
+    },
+    {
+      "item": "Avocado oil cooking spray",
+      "source": "Amazon or Costco (Mists evenly)"
+    }
+  ],
+  "baking_and_sweet": [
+    {
+      "item": "Baking powder & Baking soda",
+      "source": "Generic"
+    },
+    {
+      "item": "Cocoa powder",
+      "source": "Generic"
+    },
+    {
+      "item": "Pure Via 0 cal caster sugar alternative",
+      "source": "Tesco"
+    },
+    {
+      "item": "Pure Via soft brown 0 cal sugar alternative",
+      "source": "Tesco"
+    },
+    {
+      "item": "Pure Via 0 cal Stevia granules & Icing sugar alternative",
+      "source": "Tesco"
+    },
+    {
+      "item": "Hartleys sugar free jelly sachets",
+      "source": "Tesco"
+    },
+    {
+      "item": "Runny Honey",
+      "source": "Generic"
+    },
+    {
+      "item": "Clarks 50% less sugar maple syrup",
+      "source": "Tesco, Aldi, Lidl"
+    },
+    {
+      "item": "0 cal syrups (Maple, Choc-fudge)",
+      "source": "Protein Works"
+    },
+    {
+      "item": "Sweet Freedom choc shot syrup",
+      "source": "Tesco, Aldi"
+    },
+    {
+      "item": "Reduced sugar Jam",
+      "source": "Tesco"
+    },
+    {
+      "item": "Lotus Biscoff spread",
+      "source": "Tesco"
+    },
+    {
+      "item": "PBfit peanut butter powder",
+      "source": "Amazon"
+    },
+    {
+      "item": "Extracts: Vanilla & Lemon",
+      "source": "Tesco, Aldi, Lidl"
+    },
+    {
+      "item": "Mix-ins: Mini marshmallows, Light Digestives, Oreos, Lotus Biscuits",
+      "source": "Tesco"
+    },
+    {
+      "item": "Fibre One birthday cake bars",
+      "source": "Tesco / Aldi own brand"
+    }
+  ],
+  "seasonings_and_protein": [
+    {
+      "item": "Kirkland Himalayan Pink Salt & Black Pepper",
+      "source": "Costco or Amazon"
+    },
+    {
+      "item": "Schwartz Paprika, Garlic Granules, Cumin, Italian Seasoning",
+      "source": "Costco or Amazon"
+    },
+    {
+      "item": "Badia Onion Powder",
+      "source": "Amazon"
+    },
+    {
+      "item": "Cayenne, Cajun, Chilli powder, Curry powder, Turmeric, Ginger",
+      "source": "Tesco, Aldi"
+    },
+    {
+      "item": "Old El Paso Taco Seasoning",
+      "source": "Tesco"
+    },
+    {
+      "item": "Nutritional Yeast (Engevita flakes)",
+      "source": "Tesco"
+    },
+    {
+      "item": "Xanthan Gum",
+      "source": "Tesco gluten free section"
+    },
+    {
+      "item": "Whey Protein: French Vanilla, Chocolate Silk, Strawberries & Cream, Salted Caramel",
+      "source": "Protein Works 360 Whey"
+    },
+    {
+      "item": "Clear Whey: Tropical Punch (86 cals, 20g protein)",
+      "source": "Protein Works"
+    },
+    {
+      "item": "Creatine Monohydrate (Unflavoured 5g/day)",
+      "source": "Protein Works"
+    }
+  ]
+}

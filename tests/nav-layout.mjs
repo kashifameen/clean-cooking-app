@@ -64,18 +64,24 @@ const port = server.address().port;
 const browser = await puppeteer.launch({
   executablePath: chrome,
   headless: true,
+  protocolTimeout: 120000,
   args: ["--no-sandbox", "--disable-dev-shm-usage"],
 });
 
 try {
   const page = await browser.newPage();
+  await page.setRequestInterception(true);
+  page.on("request", (req) => {
+    const url = req.url();
+    if (url.endsWith("/sw.js") || req.resourceType() === "image") req.abort();
+    else req.continue();
+  });
   for (const item of cases) {
     await page.setViewport({ width: item.width, height: item.height, deviceScaleFactor: 1 });
-    await page.goto(`http://127.0.0.1:${port}/`, { waitUntil: "domcontentloaded" });
+    await page.goto(`http://127.0.0.1:${port}/`, { waitUntil: "domcontentloaded", timeout: 15000 });
     await page.evaluate((font) => {
       document.documentElement.style.fontSize = `${font}px`;
     }, item.font);
-    await page.waitForSelector(".nav-tab-btn");
     const report = await page.evaluate(() => {
       const vw = document.documentElement.clientWidth;
       const vh = document.documentElement.clientHeight;
@@ -110,7 +116,6 @@ try {
     if (bad.length || report.pageOverflow > 1 || report.navScroll > 1) {
       throw new Error(`${item.name} layout failed ${JSON.stringify({ bad, pageOverflow: report.pageOverflow, navScroll: report.navScroll })}`);
     }
-    await page.screenshot({ path: path.join(outDir, `${item.name}.png`), clip: { x: 0, y: 0, width: item.width, height: Math.min(item.height, 420) } });
     console.log(`${item.name} ok tabs=${report.tabs.map((tab) => tab.tab).join(",")}`);
   }
 

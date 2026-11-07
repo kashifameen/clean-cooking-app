@@ -24,7 +24,7 @@ Opening `public/index.html` as a `file://` URL cannot load the recipe JSON. Use 
 | | |
 | --- | --- |
 | Package | `app.cleancooking.halal` |
-| Version | `1.1.1` (`versionCode` 5) |
+| Version | `1.1.2` (`versionCode` 6). Same release certificate as 1.1.0 and 1.1.1. |
 | Min / target SDK | 23 / 35 |
 | Wrapper | Capacitor 7, web assets in `public/` |
 | Distribution build | **Release-signed and not debuggable.** This is the APK to send to friends. It is not a Google Play upload. |
@@ -73,13 +73,13 @@ Bundled for offline use:
 - `recipes.json`, `shopping_guide.json`, `cookbook_guide.json`
 - App icons and the recipe photos
 
-Recipe photos on the public site were about 235.5 MB. This repo stores JPEG thumbnails at a 960px long edge and quality 78, about 15.2 MB for all 277 images. The APK is about 20 MB and includes those thumbnails, so recipe photos render without a network. Details are in [docs/photo-optimization.json](docs/photo-optimization.json).
+Recipe photos on the public site were about 235.5 MB. This repo stores JPEG thumbnails at a 960px long edge and quality 78, about 17.5 MB for all 277 images. Version 1.1.2 refreshes the 64 photos that changed on the public site. The recipe text is unchanged. The APK is about 21.5 MB and includes those thumbnails, so recipe photos render without a network. Details are in [docs/photo-optimization.json](docs/photo-optimization.json).
 
 The only runtime network fallback is the Unsplash image used when a recipe photo fails to load (`onerror` in `public/js/app.js`). Core browsing, search, recipe details, step timers, serving scale, meal planning, shopping, and guides do not need that image.
 
 On a narrow screen the five primary tabs wrap into a grid under the title, so Recipes, Drinks, Meal Prep, Shopping, and Guides all stay on screen. Wider windows put them in one wrapping row. The page does not slide sideways to reach a tab.
 
-The service worker caches the app shell, JSON, icons, fonts, CSS, and Lucide. It does not cache recipe photos or the Unsplash fallback. Inside the APK the photos are already local files.
+The service worker caches the app shell, JSON, icons, fonts, CSS, and Lucide. It does not cache recipe photos or the Unsplash fallback. Inside the APK the photos are already local files. Version 1.1.2 uses cache name `clean-cooking-v8`. On an emulator upgrade from 1.1.1, the first open already showed the current tab grid and the saved favorite. If a previous worker is still controlling the page when the new one installs, the app reloads once after the new worker takes control. A second open is the fallback if that reload does not finish.
 
 The public Netlify host does not publish `/.well-known/assetlinks.json`. This package is a Capacitor app, not a Trusted Web Activity.
 

@@ -307,6 +307,14 @@ async function syncRemoteRecipes(showFeedback = false) {
   }
 }
 
+function updateMealieLoginHref() {
+  const input = document.getElementById('sync-mealie-url');
+  const link = document.getElementById('mealie-login-link');
+  if (!link) return;
+  const base = ((input && input.value.trim()) || DEFAULT_MEALIE_URL).replace(/\/$/, '');
+  link.href = `${base}/login`;
+}
+
 function openSyncModal() {
   const modal = document.getElementById('sync-modal');
   if (!modal) return;
@@ -314,6 +322,7 @@ function openSyncModal() {
   document.getElementById('sync-github-url').value = s.githubUrl;
   document.getElementById('sync-mealie-url').value = s.mealieUrl;
   document.getElementById('sync-mealie-token').value = s.mealieToken;
+  updateMealieLoginHref();
   modal.classList.remove('hidden');
   modal.classList.add('flex');
   initLucideIcons();

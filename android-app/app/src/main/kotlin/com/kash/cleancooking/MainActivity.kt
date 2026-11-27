@@ -15,6 +15,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
+import android.speech.tts.Voice
 import android.view.ViewGroup
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
@@ -52,9 +53,64 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
 
   override fun onInit(status: Int) {
     if (status == TextToSpeech.SUCCESS) {
-      tts?.language = Locale.UK
-      ttsReady = true
+      tts?.let { engine ->
+        engine.language = Locale.UK
+        selectBestNaturalVoice(engine)
+        engine.setSpeechRate(0.95f)
+        engine.setPitch(1.0f)
+        ttsReady = true
+      }
     }
+  }
+
+  private fun selectBestNaturalVoice(engine: TextToSpeech) {
+    try {
+      val voices = engine.voices ?: return
+      val englishVoices = voices.filter {
+        it.locale.language.equals("en", ignoreCase = true) && !it.isNetworkConnectionRequired
+      }.ifEmpty {
+        voices.filter { it.locale.language.equals("en", ignoreCase = true) }
+      }
+      // Also consider high-quality Google neural network voices if available
+      val allEnglish = voices.filter { it.locale.language.equals("en", ignoreCase = true) }
+      val candidates = if (allEnglish.isNotEmpty()) allEnglish else englishVoices
+
+      val best = candidates.maxByOrNull { v ->
+        var score = 0
+        // Strongly prefer Google's natural neural voices (Wavenet/Studio/Neural)
+        val n = v.name.lowercase(Locale.US)
+        if (v.quality >= Voice.QUALITY_VERY_HIGH) score += 50
+        else if (v.quality >= Voice.QUALITY_HIGH) score += 35
+        else if (v.quality >= Voice.QUALITY_NORMAL) score += 15
+        if (n.contains("network") || n.contains("neural") || n.contains("wavenet")) score += 25
+        if (n.contains("en-gb") || v.locale == Locale.UK) score += 12
+        if (n.contains("gbb") || n.contains("rjs") || n.contains("gba") || n.contains("tpf") || n.contains("sfg")) score += 10
+        if (v.features.contains("notInstalled")) score -= 100
+        score
+      }
+      if (best != null) {
+        engine.voice = best
+      }
+    } catch (_: Exception) {
+    }
+  }
+
+  private fun formatNaturalChefSpeech(raw: String): String {
+    return raw
+      .replace(Regex("""(\d+)\s*[-–]\s*(\d+)\s*mins?\b""", RegexOption.IGNORE_CASE), "$1 to $2 minutes")
+      .replace(Regex("""(\d+)\s*mins?\b""", RegexOption.IGNORE_CASE), "$1 minutes")
+      .replace(Regex("""(\d+)\s*secs?\b""", RegexOption.IGNORE_CASE), "$1 seconds")
+      .replace(Regex("""(\d+)\s*°?\s*C\b"""), "$1 degrees Celsius")
+      .replace(Regex("""(\d+)\s*°?\s*F\b"""), "$1 degrees Fahrenheit")
+      .replace(Regex("""(\d+)\s*g\b"""), "$1 grams")
+      .replace(Regex("""(\d+)\s*kg\b"""), "$1 kilograms")
+      .replace(Regex("""(\d+)\s*ml\b"""), "$1 millilitres")
+      .replace(Regex("""\btbsp\b""", RegexOption.IGNORE_CASE), "tablespoon")
+      .replace(Regex("""\btsp\b""", RegexOption.IGNORE_CASE), "teaspoon")
+      .replace("•", ". ")
+      .replace("&", " and ")
+      .replace(Regex("""\s+"""), " ")
+      .trim()
   }
 
   inner class AndroidMealieBridge {
@@ -109,7 +165,8 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
     fun speak(text: String) {
       runOnUiThread {
         if (ttsReady && text.isNotBlank()) {
-          tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "clean_cooking_step")
+          val natural = formatNaturalChefSpeech(text)
+          tts?.speak(natural, TextToSpeech.QUEUE_FLUSH, null, "clean_cooking_step")
         }
       }
     }
@@ -209,7 +266,19 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
-    tts = TextToSpeech(this, this)
+    // Prefer Google Speech Services (much more natural neural voices than default Samsung TTS)
+    val googleTtsPkg = "com.google.android.tts"
+    val hasGoogleTts = try {
+      packageManager.getPackageInfo(googleTtsPkg, 0)
+      true
+    } catch (_: Exception) {
+      false
+    }
+    tts = if (hasGoogleTts) {
+      TextToSpeech(this, this, googleTtsPkg)
+    } else {
+      TextToSpeech(this, this)
+    }
     createTimerNotificationChannel()
     ensureNotificationPermission()
 

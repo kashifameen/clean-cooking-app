@@ -31,7 +31,7 @@ const AppState = {
   smartShopGrouped: true
 };
 
-const APP_VERSION = '3.0';
+const APP_VERSION = '3.1';
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', async () => {

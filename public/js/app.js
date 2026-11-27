@@ -31,11 +31,17 @@ const AppState = {
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', async () => {
-  initLucideIcons();
-  setupEventListeners();
-  loadUserProfile();
-  await loadData();
-  renderApp();
+  try {
+    initLucideIcons();
+    setupEventListeners();
+    try { loadUserProfile(); } catch (e) { console.warn('Profile init:', e); }
+    await loadData();
+    renderApp();
+  } catch (err) {
+    console.error('Startup error:', err);
+    const countEl = document.getElementById('results-count');
+    if (countEl) countEl.textContent = `Load error: ${err.message || err}`;
+  }
 });
 
 function initLucideIcons() {
@@ -86,17 +92,30 @@ function updateRecipeCountBadges() {
   if (navBtn) navBtn.textContent = `Recipes (${count})`;
 }
 
+async function loadJsonAsset(relativePath) {
+  // Fast native Android asset read (zero network/ServiceWorker overhead, <5ms)
+  if (window.AndroidMealieBridge && typeof window.AndroidMealieBridge.readAsset === 'function') {
+    const raw = window.AndroidMealieBridge.readAsset(relativePath);
+    if (raw && raw.length > 2) {
+      return JSON.parse(raw);
+    }
+  }
+  const res = await fetch(relativePath);
+  if (!res.ok) throw new Error(`Failed to load ${relativePath} (${res.status})`);
+  return await res.json();
+}
+
 async function loadData() {
   try {
-    const [recipesRes, shopRes, guideRes] = await Promise.all([
-      fetch('data/recipes.json'),
-      fetch('data/shopping_guide.json'),
-      fetch('data/cookbook_guide.json')
+    const [baseRecipesLoaded, shopData, guideData] = await Promise.all([
+      loadJsonAsset('data/recipes.json'),
+      loadJsonAsset('data/shopping_guide.json'),
+      loadJsonAsset('data/cookbook_guide.json')
     ]);
 
-    let baseRecipes = await recipesRes.json();
-    AppState.shoppingGuide = await shopRes.json();
-    AppState.cookbookGuide = await guideRes.json();
+    let baseRecipes = baseRecipesLoaded;
+    AppState.shoppingGuide = shopData;
+    AppState.cookbookGuide = guideData;
 
     // Immediately merge any previously cached remote/Mealie recipes for instant offline use
     try {
@@ -110,13 +129,15 @@ async function loadData() {
     updateRecipeCountBadges();
 
     // Fire background auto-sync from GitHub & Mealie (non-blocking)
-    syncRemoteRecipes(false);
+    setTimeout(() => syncRemoteRecipes(false), 600);
   } catch (err) {
     console.error("Error loading JSON data:", err);
+    const countEl = document.getElementById('results-count');
+    if (countEl) countEl.textContent = `Error: ${err.message || err}`;
     document.getElementById('recipes-grid').innerHTML = `
       <div class="col-span-full py-12 text-center text-slate-400">
         <p class="text-lg font-semibold text-rose-400 mb-2">Error loading recipes database.</p>
-        <p class="text-sm">Please check your app data or connection.</p>
+        <p class="text-sm">${err.message || 'Please check your app data or connection.'}</p>
       </div>
     `;
   }

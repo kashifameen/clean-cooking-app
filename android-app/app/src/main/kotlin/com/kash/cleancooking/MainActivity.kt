@@ -85,6 +85,16 @@ class MainActivity : ComponentActivity() {
     }
 
     @JavascriptInterface
+    fun readAsset(relativePath: String): String {
+      return try {
+        val clean = relativePath.trimStart('/')
+        assets.open("www/$clean").bufferedReader(Charsets.UTF_8).use { it.readText() }
+      } catch (e: Exception) {
+        ""
+      }
+    }
+
+    @JavascriptInterface
     fun notifyTimerComplete(title: String, message: String) {
       runOnUiThread {
         showTimerNotification(title, message)

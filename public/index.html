@@ -36,9 +36,16 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
-      });
+      if (window.AndroidMealieBridge || location.hostname === 'appassets.androidplatform.net') {
+        // Inside Android APK: unregister any stale Service Worker that breaks WebViewAssetLoader
+        navigator.serviceWorker.getRegistrations().then(regs => {
+          regs.forEach(r => r.unregister());
+        }).catch(() => {});
+      } else {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').catch(() => {});
+        });
+      }
     }
   </script>
 </head>

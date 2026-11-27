@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Clean Cooking — 100% Halal High-Protein Cookbook App (277 Recipes)</title>
+  <title>Clean Cooking — 100% Halal Cookbook App (1,418 Recipes)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -66,7 +66,7 @@
               CLEAN <span class="text-emerald-400">COOKING</span>
             </span>
             <span class="block text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-wider font-semibold font-mono truncate">
-              100% Halal • 277 Recipes • By Kash
+              100% Halal • 1,418 Recipes • By Kash
             </span>
           </div>
         </div>
@@ -82,7 +82,7 @@
       <nav class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 md:pb-0 -mx-1 px-1">
         <button class="nav-tab-btn flex-shrink-0 whitespace-nowrap flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold border transition text-emerald-400 border-emerald-500 bg-emerald-500/10" data-tab="recipes">
           <i data-lucide="book-open" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
-          <span>Recipes (277)</span>
+          <span>Recipes (1,418)</span>
         </button>
         <button class="nav-tab-btn flex-shrink-0 whitespace-nowrap flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold border transition text-slate-400 border-transparent hover:text-slate-200" data-tab="drinks">
           <i data-lucide="coffee" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-pink-400"></i>
@@ -120,7 +120,7 @@
             <input 
               type="text" 
               id="search-input" 
-              placeholder="Search 277 Halal recipes across both cookbooks (cutting + lean bulking, pink tea, chicken, beef)..." 
+              placeholder="Search 1,418 Halal recipes (Sam the Cooking Guy, Sorted Food, High-Protein, Lean Bulking)..." 
               class="w-full pl-11 pr-10 py-3 rounded-xl bg-slate-900/90 border border-slate-700/80 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
             >
             <button id="clear-search-btn" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-1" title="Clear search">
@@ -144,7 +144,7 @@
         <!-- Category Nav Pills -->
         <div class="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
           <button class="cat-pill-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition active-cat" data-cat="All">
-            All Halal (277)
+            All Halal (1,418)
           </button>
           <button class="cat-pill-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition text-amber-300 border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20" data-cat="Hotpot">
             ⚡ Pressure Cooker / Hotpot (277)
@@ -198,10 +198,11 @@
           <div class="space-y-1.5">
             <span class="text-slate-400 font-semibold block">Cookbook & Goals:</span>
             <div class="flex flex-wrap gap-1">
+              <button class="quick-tag-btn px-2 py-1 rounded bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 text-[11px] font-bold border border-orange-500/40" data-tag="Sam the Cooking Guy">🔥 Sam the Cooking Guy (1,039)</button>
+              <button class="quick-tag-btn px-2 py-1 rounded bg-sky-500/20 text-sky-300 hover:bg-sky-500/30 text-[11px] font-bold border border-sky-500/40" data-tag="Sorted Food">🍽️ Sorted Food (102)</button>
               <button class="quick-tag-btn px-2 py-1 rounded bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 text-[11px] font-bold border border-amber-500/40" data-tag="Lean Bulking">💪 Lean Bulking (72)</button>
               <button class="quick-tag-btn px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 text-[11px] font-bold border border-emerald-500/40" data-tag="High Protein">High Protein (30g+)</button>
               <button class="quick-tag-btn px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-medium" data-tag="Air Fryer">Air Fryer</button>
-              <button class="quick-tag-btn px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-medium" data-tag="Meal Prep Friendly">Meal Prep</button>
               <button class="quick-tag-btn px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-medium" data-tag="Chicken">Chicken</button>
               <button class="quick-tag-btn px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-medium" data-tag="Beef">Beef</button>
             </div>
@@ -212,7 +213,7 @@
 
       <!-- Results Stats Banner -->
       <div class="flex items-center justify-between text-xs text-slate-400 px-1">
-        <span id="results-count">Loading 277 recipes...</span>
+        <span id="results-count">Loading 1,418 recipes...</span>
         <button onclick="resetFilters()" class="text-emerald-400 hover:underline font-semibold flex items-center gap-1">
           <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset Filters
         </button>
@@ -580,7 +581,7 @@
 
       <!-- Modal Hero Section -->
       <div class="relative w-full h-64 sm:h-80 bg-slate-950 flex-shrink-0">
-        <img id="modal-image" src="" alt="" class="w-full h-full object-cover">
+        <img id="modal-image" src="" alt="" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80'" class="w-full h-full object-cover">
         <div class="absolute inset-0 bg-gradient-to-t from-[#111827] via-[#111827]/40 to-black/40"></div>
         
         <div class="absolute bottom-4 left-6 right-6">
@@ -813,7 +814,7 @@
   <footer class="border-t border-slate-800/80 bg-[#090d16] py-8 text-center text-xs text-slate-500 mt-12">
     <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
       <div class="text-center sm:text-left">
-        <p class="text-slate-400 font-medium">Clean Cooking App • 277 100% Halal Recipes • High-Protein Chef & Lean Bulking Guides</p>
+        <p class="text-slate-400 font-medium">Clean Cooking App • 1,418 100% Halal Recipes • Sam the Cooking Guy, Sorted Food &amp; High-Protein Guides</p>
         <p class="font-mono text-emerald-400/80 text-[11px] mt-0.5">
           Strictly Metric Units • Hosted live on <a href="https://meals.kashjelly.vip/login" target="_blank" rel="noopener noreferrer" class="underline hover:text-emerald-300">meals.kashjelly.vip</a>
         </p>
@@ -825,6 +826,6 @@
     </div>
   </footer>
 
-  <script src="js/app.js?v=2.1"></script>
+  <script src="js/app.js?v=2.2"></script>
 </body>
 </html>

@@ -208,8 +208,8 @@ async function syncRemoteRecipes(showFeedback = false) {
 
     try {
       const listUrl = settings.mealieToken
-        ? `${base}/api/recipes?perPage=300`
-        : `${base}/api/explore/groups/home/recipes?perPage=300`;
+        ? `${base}/api/recipes?perPage=50&orderBy=createdAt&orderDirection=desc`
+        : `${base}/api/explore/groups/home/recipes?perPage=50&orderBy=createdAt&orderDirection=desc`;
       const mData = await mealieFetchJson(listUrl, settings.mealieToken);
       const items = (mData.items || mData || []).filter(m => {
         const slugMatch = m.slug && existingMealieSlugs.has(m.slug);

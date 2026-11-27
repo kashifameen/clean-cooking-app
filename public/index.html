@@ -55,7 +55,7 @@
   <header class="sticky top-0 z-40 bg-[#0c1220]/95 backdrop-blur-xl border-b border-slate-800/80 shadow-lg">
     <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
       
-      <!-- Brand Row (Brand + Mobile Sync Button) -->
+        <!-- Brand Row -->
       <div class="flex items-center justify-between gap-2 min-w-0">
         <div class="flex items-center gap-2.5 cursor-pointer min-w-0" onclick="switchTab('recipes')">
           <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-lime-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 flex-shrink-0">
@@ -70,12 +70,6 @@
             </span>
           </div>
         </div>
-
-        <!-- Mobile Mealie Sync button on top right so nav stays uncluttered -->
-        <button onclick="openSyncModal()" title="Integrate with Mealie to sync your own recipes" class="md:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold border border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition flex-shrink-0">
-          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-          <span>Mealie Sync</span>
-        </button>
       </div>
 
       <!-- App Made by Kash Badge -->
@@ -105,10 +99,6 @@
         <button class="nav-tab-btn flex-shrink-0 whitespace-nowrap flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold border transition text-slate-400 border-transparent hover:text-slate-200" data-tab="guide">
           <i data-lucide="sparkles" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
           <span>Guides</span>
-        </button>
-        <button onclick="openSyncModal()" id="sync-nav-btn" title="Integrate with Mealie to sync your own recipes" class="hidden md:flex flex-shrink-0 whitespace-nowrap items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition">
-          <i data-lucide="refresh-cw" id="sync-nav-icon" class="w-4 h-4"></i>
-          <span>Mealie Sync</span>
         </button>
       </nav>
     </div>
@@ -218,33 +208,6 @@
           </div>
         </div>
 
-      </div>
-
-      <!-- Mealie Integration Callout Banner -->
-      <div id="mealie-integration-banner" class="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-slate-900/90 to-emerald-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
-        <div class="flex items-start sm:items-center gap-3 min-w-0">
-          <div class="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/35 flex items-center justify-center flex-shrink-0">
-            <i data-lucide="cloud-download" class="w-5 h-5 text-amber-300"></i>
-          </div>
-          <div class="min-w-0">
-            <h3 class="font-heading font-extrabold text-sm text-white flex items-center gap-1.5 flex-wrap">
-              <span>Integrate with Mealie — Sync Your Own Recipes</span>
-            </h3>
-            <p class="text-xs text-slate-300 mt-0.5">
-              Connect your Mealie account to automatically pull your own custom recipes, ingredients &amp; photos into Clean Cooking.
-            </p>
-          </div>
-        </div>
-        <div class="flex items-center gap-2 flex-shrink-0">
-          <a href="https://meals.kashjelly.vip/login" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-heading font-black text-xs flex items-center gap-1.5 transition shadow">
-            <span>Mealie Login</span>
-            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-          </a>
-          <button onclick="openSyncModal()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/35 font-bold text-xs flex items-center gap-1.5 transition">
-            <i data-lucide="settings-2" class="w-3.5 h-3.5"></i>
-            <span>Connect &amp; Sync</span>
-          </button>
-        </div>
       </div>
 
       <!-- Results Stats Banner -->
@@ -812,68 +775,6 @@
     </div>
   </div>
 
-  <!-- Mealie Integration & Auto-Sync Modal -->
-  <div id="sync-modal" class="fixed inset-0 z-50 modal-overlay items-center justify-center p-4 sm:p-6 hidden">
-    <div class="bg-[#111827] border border-amber-500/40 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col relative animate-fade-in">
-      <div class="p-5 border-b border-slate-800 flex items-center justify-between gap-3 bg-slate-900/80">
-        <div>
-          <h3 class="font-heading font-extrabold text-lg text-white flex items-center gap-2">
-            <i data-lucide="cloud-download" class="w-5 h-5 text-amber-400"></i>
-            Mealie Integration — Sync Your Recipes
-          </h3>
-          <p class="text-xs text-slate-400">Sign in to Mealie to automatically sync your own recipes into this app.</p>
-        </div>
-        <button onclick="closeSyncModal()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-      <div class="p-5 space-y-4 overflow-y-auto max-h-[78vh]">
-        <div id="sync-status-banner" class="p-3 rounded-xl bg-slate-900/90 border border-slate-700 text-xs text-slate-300 font-mono">
-          Status: Ready to connect Mealie
-        </div>
-
-        <!-- Step 1: Go to Mealie Login Page -->
-        <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-3">
-          <div class="flex items-center justify-between gap-2">
-            <span class="text-xs font-heading font-black uppercase tracking-wider text-amber-300">Step 1: Sign in to Mealie</span>
-          </div>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            Open the Mealie login page, sign in to your account, then go to <strong class="text-white">User Profile &rarr; Manage Your API Tokens &rarr; Create</strong> and copy your token.
-          </p>
-          <a id="mealie-login-link" href="https://meals.kashjelly.vip/login" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-heading font-black text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-amber-500/20">
-            <i data-lucide="log-in" class="w-4 h-4"></i>
-            <span>Open Mealie Login Page</span>
-            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-          </a>
-        </div>
-
-        <!-- Step 2: Connect Server & Token -->
-        <div class="space-y-2.5">
-          <span class="block text-xs font-heading font-black uppercase tracking-wider text-emerald-400">Step 2: Paste Your Mealie API Token</span>
-          <input type="url" id="sync-mealie-url" oninput="updateMealieLoginHref()" class="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-500" placeholder="https://meals.kashjelly.vip">
-          <input type="password" id="sync-mealie-token" class="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500" placeholder="Paste your Mealie API Token here">
-          <p class="text-[11px] text-slate-400">Once saved, your Mealie recipes auto-sync every time you open Clean Cooking and stay cached offline.</p>
-        </div>
-
-        <button onclick="saveAndSyncNow()" class="w-full py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-heading font-black text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-500/20">
-          <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-          <span>Save &amp; Sync My Mealie Recipes Now</span>
-        </button>
-
-        <!-- Advanced: GitHub Auto-Sync Feed -->
-        <details class="pt-2 border-t border-slate-800">
-          <summary class="text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer hover:text-slate-200 select-none">
-            Advanced: GitHub Recipe Feed (Optional)
-          </summary>
-          <div class="mt-2 space-y-1.5">
-            <input type="url" id="sync-github-url" class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500" placeholder="https://raw.githubusercontent.com/kashifameen/clean-cooking-app/main/public/data/recipes.json">
-            <p class="text-[11px] text-slate-400">Automatically pulls updates pushed to your GitHub cookbook repo.</p>
-          </div>
-        </details>
-      </div>
-    </div>
-  </div>
-
   <!-- Guided Cooking Mode Overlay (Live Preheat & Step-by-Step Timers) -->
   <div id="guided-cook-modal" class="fixed inset-0 z-[60] modal-overlay items-center justify-center p-3 sm:p-6 hidden">
     <div class="bg-[#0b1120] border border-emerald-500/40 rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-hidden shadow-2xl shadow-emerald-500/10 flex flex-col relative animate-fade-in">
@@ -913,7 +814,9 @@
     <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
       <div class="text-center sm:text-left">
         <p class="text-slate-400 font-medium">Clean Cooking App • 277 100% Halal Recipes • High-Protein Chef & Lean Bulking Guides</p>
-        <p class="font-mono text-emerald-400/80 text-[11px] mt-0.5">Strictly Metric Units • Pressure Cooker & Hotpot Pro Ready • Interactive Step Timers</p>
+        <p class="font-mono text-emerald-400/80 text-[11px] mt-0.5">
+          Strictly Metric Units • Hosted live on <a href="https://meals.kashjelly.vip/login" target="_blank" rel="noopener noreferrer" class="underline hover:text-emerald-300">meals.kashjelly.vip</a>
+        </p>
       </div>
       <div class="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-slate-900 border border-emerald-500/30 text-slate-200 shadow-md">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -922,6 +825,6 @@
     </div>
   </footer>
 
-  <script src="js/app.js?v=2.0"></script>
+  <script src="js/app.js?v=2.1"></script>
 </body>
 </html>

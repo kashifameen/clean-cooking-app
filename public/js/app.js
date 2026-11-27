@@ -80,7 +80,9 @@ function mergeRecipeLists(baseList, incomingList, sourceTag) {
       byId.set(r.id, r);
     } else if (sourceTag === 'github') {
       updated++;
-      byId.set(r.id, { ...byId.get(r.id), ...r });
+      const existing = byId.get(r.id);
+      const keepVpsImg = existing && existing.image && existing.image.startsWith('http') && r.image && !r.image.startsWith('http');
+      byId.set(r.id, { ...existing, ...r, image: keepVpsImg ? existing.image : (r.image || existing.image) });
     }
   });
   return { merged: Array.from(byId.values()), added, updated };
@@ -185,7 +187,7 @@ async function syncRemoteRecipes(showFeedback = false) {
     }
   }
 
-  // 2. Auto-sync from Mealie API (CORS-free via native AndroidMealieBridge in APK, or fetch on web)
+  // 2. Auto-sync from Mealie VPS (Public Explore zero-login + optional personal API token)
   async function mealieFetchJson(url, token) {
     if (window.AndroidMealieBridge && typeof window.AndroidMealieBridge.fetchJson === 'function') {
       const raw = JSON.parse(window.AndroidMealieBridge.fetchJson(url, token || ''));
@@ -199,20 +201,33 @@ async function syncRemoteRecipes(showFeedback = false) {
     return await res.json();
   }
 
-  if (settings.mealieUrl && settings.mealieToken) {
-    try {
-      const base = settings.mealieUrl.replace(/\/$/, '');
-      const mData = await mealieFetchJson(`${base}/api/recipes?perPage=200`, settings.mealieToken);
-      const items = mData.items || mData || [];
+  if (settings.mealieUrl) {
+    const base = settings.mealieUrl.replace(/\/$/, '');
+    const existingMealieSlugs = new Set(AppState.recipes.map(r => r.mealieSlug).filter(Boolean));
+    const existingTitles = new Set(AppState.recipes.map(r => (r.title || '').trim().toLowerCase()));
 
-      // Fetch full details (ingredients + instructions + nutrition) in batches of 5
+    try {
+      const listUrl = settings.mealieToken
+        ? `${base}/api/recipes?perPage=300`
+        : `${base}/api/explore/groups/home/recipes?perPage=300`;
+      const mData = await mealieFetchJson(listUrl, settings.mealieToken);
+      const items = (mData.items || mData || []).filter(m => {
+        const slugMatch = m.slug && existingMealieSlugs.has(m.slug);
+        const titleMatch = m.name && existingTitles.has(m.name.trim().toLowerCase());
+        return !slugMatch && !titleMatch;
+      });
+
+      // Fetch full details (ingredients + instructions + nutrition) only for NEW Mealie recipes
       const detailedItems = [];
       for (let i = 0; i < items.length; i += 5) {
         const batch = items.slice(i, i + 5);
         const batchResults = await Promise.all(batch.map(async (m) => {
           if (!m.slug) return m;
           try {
-            return await mealieFetchJson(`${base}/api/recipes/${encodeURIComponent(m.slug)}`, settings.mealieToken);
+            const detailUrl = settings.mealieToken
+              ? `${base}/api/recipes/${encodeURIComponent(m.slug)}`
+              : `${base}/api/explore/groups/home/recipes/${encodeURIComponent(m.slug)}`;
+            return await mealieFetchJson(detailUrl, settings.mealieToken);
           } catch {
             return m;
           }
@@ -250,11 +265,13 @@ async function syncRemoteRecipes(showFeedback = false) {
 
         return {
           id: `mealie-${m.slug || m.id || idx}`,
+          mealieId: m.id,
+          mealieSlug: m.slug,
           number: 900 + idx,
           title: m.name || 'Mealie Recipe',
           category,
-          subCategory: 'Mealie Sync',
-          subcategory: 'Mealie Sync',
+          subCategory: 'Mealie VPS',
+          subcategory: 'Mealie VPS',
           nutrition: {
             calories: cals,
             protein: pro,
@@ -268,12 +285,12 @@ async function syncRemoteRecipes(showFeedback = false) {
           carbs: carbs,
           fat: fat,
           servings: serv,
-          image: m.id ? `${base}/api/media/recipes/${m.id}/images/original.webp` : 'images/icon-512.png',
+          image: m.id ? `${base}/api/media/recipes/${m.id}/images/min-original.webp` : 'images/icon-512.png',
           ingredients,
           ingredientSections: [{ name: 'Ingredients', items: ingredients }],
           instructions,
           notes: m.description || `Synced live from ${base}`,
-          tags: ['Mealie Sync', '100% Halal', ...(Array.isArray(m.tags) ? m.tags.map(t => t.name || t).filter(Boolean) : [])]
+          tags: ['Mealie VPS', '100% Halal', ...(Array.isArray(m.tags) ? m.tags.map(t => t.name || t).filter(Boolean) : [])]
         };
       });
 
@@ -281,12 +298,10 @@ async function syncRemoteRecipes(showFeedback = false) {
       AppState.recipes = res.merged;
       totalAddedCount += res.added;
       remoteCollected = remoteCollected.concat(mealieMapped);
-      statusParts.push(`Mealie: OK (${mealieMapped.length} synced, +${res.added} new)`);
+      statusParts.push(`Mealie VPS: OK (+${res.added} new)`);
     } catch (e) {
-      statusParts.push(`Mealie: ${e.message || 'Connection error'}`);
+      statusParts.push(settings.mealieToken ? `Mealie: ${e.message || 'Connection error'}` : 'Mealie VPS: Photos live (add token for private recipes)');
     }
-  } else {
-    statusParts.push('Mealie: Add API token to enable');
   }
 
   if (remoteCollected.length > 0) {

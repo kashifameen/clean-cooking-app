@@ -12,12 +12,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Sync latest public web assets into Android project
+      - name: Sync latest public web assets into Android project (VPS-streamed, no bundled recipe photos)
         run: |
           rm -rf android-app/app/src/main/assets/www
           mkdir -p android-app/app/src/main/assets/www
           cp -r public/* android-app/app/src/main/assets/www/
           rm -rf android-app/app/src/main/assets/www/exports
+          rm -rf android-app/app/src/main/assets/www/images/recipes
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4

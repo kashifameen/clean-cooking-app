@@ -14,8 +14,8 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.speech.tts.TextToSpeech
 import android.view.ViewGroup
-import android.widget.FrameLayout
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -23,6 +23,7 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.SystemBarStyle
@@ -37,14 +38,24 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.Locale
 
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
   private lateinit var rootContainer: FrameLayout
   private lateinit var webView: WebView
+  private var tts: TextToSpeech? = null
+  private var ttsReady = false
   private val timerChannelId = "clean_cooking_timers"
 
   private val requestNotificationPermission =
     registerForActivityResult(ActivityResultContracts.RequestPermission()) { _ -> }
+
+  override fun onInit(status: Int) {
+    if (status == TextToSpeech.SUCCESS) {
+      tts?.language = Locale.UK
+      ttsReady = true
+    }
+  }
 
   inner class AndroidMealieBridge {
     @JavascriptInterface
@@ -56,7 +67,7 @@ class MainActivity : ComponentActivity() {
           connectTimeout = 15000
           readTimeout = 15000
           setRequestProperty("Accept", "application/json")
-          setRequestProperty("User-Agent", "CleanCookingApp/1.0")
+          setRequestProperty("User-Agent", "CleanCookingApp/3.0")
           if (bearerToken.isNotBlank()) {
             setRequestProperty("Authorization", "Bearer $bearerToken")
           }
@@ -89,8 +100,46 @@ class MainActivity : ComponentActivity() {
       return try {
         val clean = relativePath.trimStart('/')
         assets.open("www/$clean").bufferedReader(Charsets.UTF_8).use { it.readText() }
-      } catch (e: Exception) {
+      } catch (_: Exception) {
         ""
+      }
+    }
+
+    @JavascriptInterface
+    fun speak(text: String) {
+      runOnUiThread {
+        if (ttsReady && text.isNotBlank()) {
+          tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "clean_cooking_step")
+        }
+      }
+    }
+
+    @JavascriptInterface
+    fun startNativeTimer(seconds: Int, title: String, message: String) {
+      runOnUiThread {
+        try {
+          val intent = Intent(this@MainActivity, TimerForegroundService::class.java).apply {
+            action = TimerForegroundService.ACTION_START
+            putExtra(TimerForegroundService.EXTRA_SECONDS, seconds)
+            putExtra(TimerForegroundService.EXTRA_TITLE, title)
+            putExtra(TimerForegroundService.EXTRA_MESSAGE, message)
+          }
+          ContextCompat.startForegroundService(this@MainActivity, intent)
+        } catch (_: Exception) {
+        }
+      }
+    }
+
+    @JavascriptInterface
+    fun stopNativeTimer() {
+      runOnUiThread {
+        try {
+          val intent = Intent(this@MainActivity, TimerForegroundService::class.java).apply {
+            action = TimerForegroundService.ACTION_STOP
+          }
+          startService(intent)
+        } catch (_: Exception) {
+        }
       }
     }
 
@@ -160,6 +209,7 @@ class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
+    tts = TextToSpeech(this, this)
     createTimerNotificationChannel()
     ensureNotificationPermission()
 
@@ -224,8 +274,6 @@ class MainActivity : ComponentActivity() {
       }
     }
 
-    // Wrap WebView in a FrameLayout so system bar, camera cutout, and keyboard insets
-    // physically position the WebView cleanly below the status bar on all phones & foldables.
     rootContainer = FrameLayout(this).apply {
       layoutParams = ViewGroup.LayoutParams(
         ViewGroup.LayoutParams.MATCH_PARENT,
@@ -274,6 +322,12 @@ class MainActivity : ComponentActivity() {
     if (::webView.isInitialized) {
       webView.requestLayout()
     }
+  }
+
+  override fun onDestroy() {
+    tts?.stop()
+    tts?.shutdown()
+    super.onDestroy()
   }
 
   override fun onSaveInstanceState(outState: Bundle) {

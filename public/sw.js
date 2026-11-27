@@ -1,9 +1,11 @@
-const CACHE_NAME = 'clean-cooking-v18';
+const CACHE_NAME = 'clean-cooking-v19';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './css/style.css',
   './js/app.js',
+  './vendor/tailwind.js',
+  './vendor/lucide.min.js',
   './manifest.json',
   './images/icon-192.png',
   './images/icon-512.png',

@@ -26,17 +26,23 @@ const AppState = {
   checkedSteps: new Set(),
   checkedIpSteps: new Set(),
   activeTimers: {}, // stepId -> { totalSec, remainingSec, isRunning, intervalId }
-  modalActiveTab: 'method' // 'method' or 'instantpot'
+  modalActiveTab: 'method', // 'method' or 'instantpot'
+  fridgeIngredients: [],
+  smartShopGrouped: true
 };
+
+const APP_VERSION = '3.0';
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     initLucideIcons();
     setupEventListeners();
+    renderFridgeChips();
     try { loadUserProfile(); } catch (e) { console.warn('Profile init:', e); }
     await loadData();
     renderApp();
+    setTimeout(checkForAppUpdate, 2000);
   } catch (err) {
     console.error('Startup error:', err);
     const countEl = document.getElementById('results-count');
@@ -79,10 +85,12 @@ function mergeRecipeLists(baseList, incomingList, sourceTag) {
       added++;
       byId.set(r.id, r);
     } else if (sourceTag === 'github') {
-      updated++;
+      // Only add genuinely new recipes from GitHub; never downgrade local macros, Instant Pot specs, or VPS images
       const existing = byId.get(r.id);
-      const keepVpsImg = existing && existing.image && existing.image.startsWith('http') && r.image && !r.image.startsWith('http');
-      byId.set(r.id, { ...existing, ...r, image: keepVpsImg ? existing.image : (r.image || existing.image) });
+      if (!existing) {
+        added++;
+        byId.set(r.id, r);
+      }
     }
   });
   return { merged: Array.from(byId.values()), added, updated };
@@ -414,10 +422,15 @@ function setupEventListeners() {
   });
 
   const searchInput = document.getElementById('search-input');
+  let searchDebounceTimer = null;
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {
-      AppState.searchQuery = e.target.value.toLowerCase().trim();
-      filterAndRenderRecipes();
+      const val = e.target.value.toLowerCase().trim();
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        AppState.searchQuery = val;
+        filterAndRenderRecipes();
+      }, 150);
     });
   }
 
@@ -624,6 +637,14 @@ function filterAndRenderRecipes() {
 
   if (AppState.activeTag !== 'All') {
     list = list.filter(r => r.tags.includes(AppState.activeTag));
+  }
+
+  // What's in My Fridge? Multi-ingredient filter (matches ALL selected ingredients)
+  if (AppState.fridgeIngredients && AppState.fridgeIngredients.length > 0) {
+    list = list.filter(r => {
+      const ingBlob = ((r.ingredients || []).join(' ') + ' ' + (r.title || '')).toLowerCase();
+      return AppState.fridgeIngredients.every(fi => ingBlob.includes(fi));
+    });
   }
 
   switch (AppState.sortBy) {
@@ -2186,6 +2207,96 @@ function saveMealPlan() {
   localStorage.setItem('clean_cooking_meal_plan', JSON.stringify(AppState.mealPlan));
 }
 
+function classifyGroceryAisle(text) {
+  const t = text.toLowerCase();
+  if (/\b(chicken|beef|steak|mince|ground|lamb|turkey|salmon|tuna|shrimp|prawn|fish|sausage|meatball|brisket)\b/.test(t)) return 'Meat & Seafood';
+  if (/\b(egg|milk|cheese|mozzarella|cheddar|parmesan|feta|halloumi|butter|cream|yogh?urt|skyr|cottage|sour cream|ricotta)\b/.test(t)) return 'Dairy & Eggs';
+  if (/\b(onion|garlic|tomato|avocado|pepper|chilli|chili|lettuce|spinach|broccoli|potato|carrot|lemon|lime|coriander|cilantro|parsley|basil|ginger|mushroom|cucumber|apple|berry|banana|mango|spring onion|scallion|cabbage|celery|courgette|zucchini)\b/.test(t)) return 'Produce & Fresh Herbs';
+  if (/\b(rice|pasta|spaghetti|noodle|bread|bun|bagel|tortilla|wrap|pita|naan|oat|flour|taco|panko|breadcrumb|crouton)\b/.test(t)) return 'Grains, Pasta & Bread';
+  return 'Spices, Sauces & Pantry';
+}
+
+function normalizeGroceryKey(text) {
+  const cleaned = text
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, '')
+    .replace(/^\s*\d+(?:[.,\/]\d+)?\s*(?:g|kg|ml|l|tbsp|tsp|cup|cups|oz|lb|lbs|cloves?|slices?|pieces?|large|medium|small|whole|cans?|packs?)?\b\s*/i, '')
+    .replace(/[^a-z\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return cleaned || text.toLowerCase().trim();
+}
+
+function parseLeadingQtyUnit(text) {
+  const m = text.trim().match(/^(\d+(?:\.\d+)?)\s*(g|ml|kg|l|tbsp|tsp)\b/i);
+  if (!m) return null;
+  return { qty: parseFloat(m[1]), unit: m[2].toLowerCase() };
+}
+
+function buildSmartMergedShopping(items) {
+  const groups = new Map();
+  items.forEach(item => {
+    const key = normalizeGroceryKey(item.text);
+    const aisle = classifyGroceryAisle(item.text);
+    const parsed = parseLeadingQtyUnit(item.text);
+    if (!groups.has(key)) {
+      groups.set(key, {
+        key,
+        aisle,
+        ids: [item.id],
+        texts: [item.text],
+        qty: parsed ? parsed.qty : null,
+        unit: parsed ? parsed.unit : null,
+        recipes: new Set(item.recipeTitle ? [item.recipeTitle] : []),
+        allCompleted: item.completed
+      });
+    } else {
+      const g = groups.get(key);
+      g.ids.push(item.id);
+      g.texts.push(item.text);
+      if (parsed && g.unit && parsed.unit === g.unit) {
+        g.qty = Math.round((g.qty + parsed.qty) * 10) / 10;
+      } else {
+        g.qty = null;
+        g.unit = null;
+      }
+      if (item.recipeTitle) g.recipes.add(item.recipeTitle);
+      g.allCompleted = g.allCompleted && item.completed;
+    }
+  });
+
+  const byAisle = {};
+  groups.forEach(g => {
+    const displayText = (g.ids.length > 1 && g.qty !== null && g.unit)
+      ? `${g.qty}${g.unit} ${g.key}`
+      : (g.ids.length > 1 ? `${g.texts[0]} (×${g.ids.length})` : g.texts[0]);
+    if (!byAisle[g.aisle]) byAisle[g.aisle] = [];
+    byAisle[g.aisle].push({ ...g, displayText });
+  });
+  return byAisle;
+}
+
+function toggleSmartShoppingMode() {
+  AppState.smartShopGrouped = !AppState.smartShopGrouped;
+  renderShoppingView();
+}
+
+function toggleMergedShopGroup(idsStr, checked) {
+  const ids = idsStr.split(',');
+  AppState.shoppingList.forEach(it => {
+    if (ids.includes(it.id)) it.completed = checked;
+  });
+  saveShoppingList();
+  renderShoppingView();
+}
+
+function removeMergedShopGroup(idsStr) {
+  const ids = new Set(idsStr.split(','));
+  AppState.shoppingList = AppState.shoppingList.filter(it => !ids.has(it.id));
+  saveShoppingList();
+  renderShoppingView();
+}
+
 function renderShoppingView() {
   const container = document.getElementById('shopping-items-list');
   if (!container) return;
@@ -2203,7 +2314,52 @@ function renderShoppingView() {
     return;
   }
 
-  container.innerHTML = items.map((item) => `
+  const toggleBar = `
+    <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+      <span class="text-xs text-slate-400 font-semibold">${items.length} total items</span>
+      <button onclick="toggleSmartShoppingMode()" class="px-3 py-1 rounded-lg text-xs font-bold border transition ${AppState.smartShopGrouped ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-slate-800 text-slate-300 border-slate-700'}">
+        ${AppState.smartShopGrouped ? '✨ Smart Aisles & Auto-Merged: ON' : 'Flat List View (Switch to Smart Aisles)'}
+      </button>
+    </div>
+  `;
+
+  if (AppState.smartShopGrouped) {
+    const byAisle = buildSmartMergedShopping(items);
+    const aisleOrder = ['Meat & Seafood', 'Produce & Fresh Herbs', 'Dairy & Eggs', 'Grains, Pasta & Bread', 'Spices, Sauces & Pantry'];
+    let html = toggleBar;
+    aisleOrder.forEach(aisle => {
+      const groupItems = byAisle[aisle];
+      if (!groupItems || groupItems.length === 0) return;
+      html += `
+        <div class="space-y-1.5 pt-2">
+          <h4 class="text-[11px] font-heading font-black uppercase tracking-wider text-emerald-400 px-1">${aisle} (${groupItems.length})</h4>
+          ${groupItems.map(g => {
+            const idList = g.ids.join(',');
+            const recStr = Array.from(g.recipes).slice(0, 2).join(', ') + (g.recipes.size > 2 ? ` +${g.recipes.size - 2} more` : '');
+            return `
+              <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/40 hover:bg-slate-800/70 border border-slate-700/50 transition">
+                <label class="flex items-center gap-3 cursor-pointer select-none flex-1">
+                  <input type="checkbox" class="custom-checkbox" onchange="toggleMergedShopGroup('${idList}', this.checked)" ${g.allCompleted ? 'checked' : ''}>
+                  <div>
+                    <span class="text-sm font-medium text-slate-200 ${g.allCompleted ? 'line-through text-slate-500' : ''}">${g.displayText}</span>
+                    ${recStr ? `<span class="block text-[10px] text-emerald-400/80">${recStr}</span>` : ''}
+                  </div>
+                </label>
+                <button onclick="removeMergedShopGroup('${idList}')" class="p-1 text-slate-400 hover:text-rose-400 transition" title="Delete item">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    });
+    container.innerHTML = html;
+    initLucideIcons();
+    return;
+  }
+
+  container.innerHTML = toggleBar + items.map((item) => `
     <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/40 hover:bg-slate-800/70 border border-slate-700/50 transition">
       <label class="flex items-center gap-3 cursor-pointer select-none flex-1">
         <input type="checkbox" class="custom-checkbox shop-item-cb" data-id="${item.id}" ${item.completed ? 'checked' : ''}>
@@ -2430,8 +2586,146 @@ const GuidedCookState = {
   totalSec: 0,
   isRunning: false,
   isReady: false,
+  voiceEnabled: false,
   intervalId: null
 };
+
+// Native Android Foreground Timer Service + Voice TTS Helpers
+function startNativeForegroundTimer(seconds, title, message) {
+  try {
+    if (window.AndroidMealieBridge && typeof window.AndroidMealieBridge.startNativeTimer === 'function') {
+      window.AndroidMealieBridge.startNativeTimer(Math.max(1, Math.round(seconds)), title, message);
+    }
+  } catch {}
+}
+
+function stopNativeForegroundTimer() {
+  try {
+    if (window.AndroidMealieBridge && typeof window.AndroidMealieBridge.stopNativeTimer === 'function') {
+      window.AndroidMealieBridge.stopNativeTimer();
+    }
+  } catch {}
+}
+
+function speakText(text) {
+  if (!GuidedCookState.voiceEnabled || !text) return;
+  try {
+    if (window.AndroidMealieBridge && typeof window.AndroidMealieBridge.speak === 'function') {
+      window.AndroidMealieBridge.speak(text);
+      return;
+    }
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 0.98;
+      window.speechSynthesis.speak(u);
+    }
+  } catch {}
+}
+
+function toggleGuidedVoice() {
+  GuidedCookState.voiceEnabled = !GuidedCookState.voiceEnabled;
+  const btn = document.getElementById('guided-voice-btn');
+  const lbl = document.getElementById('guided-voice-label');
+  if (btn) {
+    btn.className = GuidedCookState.voiceEnabled
+      ? 'px-2.5 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1 transition'
+      : 'px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold flex items-center gap-1 transition';
+  }
+  if (lbl) lbl.textContent = GuidedCookState.voiceEnabled ? 'Voice On' : 'Voice Off';
+  if (GuidedCookState.voiceEnabled) {
+    const st = GuidedCookState.steps[GuidedCookState.currentIdx];
+    if (st) speakText(`${st.label}. ${st.text}`);
+  } else if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+}
+
+// What's in My Fridge? Multi-Ingredient Finder
+const FRIDGE_QUICK_CHIPS = ['chicken', 'beef', 'eggs', 'rice', 'pasta', 'cheese', 'avocado', 'potato', 'garlic', 'tortilla'];
+
+function renderFridgeChips() {
+  const container = document.getElementById('fridge-chips-container');
+  const clearBtn = document.getElementById('fridge-clear-btn');
+  if (!container) return;
+
+  const activeSet = new Set(AppState.fridgeIngredients || []);
+  const allChips = Array.from(new Set([...AppState.fridgeIngredients, ...FRIDGE_QUICK_CHIPS]));
+
+  if (clearBtn) {
+    if (activeSet.size > 0) clearBtn.classList.remove('hidden');
+    else clearBtn.classList.add('hidden');
+  }
+
+  container.innerHTML = allChips.map(ing => {
+    const isSelected = activeSet.has(ing);
+    return `
+      <button onclick="toggleFridgeIngredient('${ing.replace(/'/g, "\\'")}')" class="px-2.5 py-1 rounded-full text-[11px] font-bold border transition ${isSelected ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-emerald-500/40'}">
+        ${isSelected ? '✓ ' : '+ '}${ing.charAt(0).toUpperCase() + ing.slice(1)}
+      </button>
+    `;
+  }).join('');
+}
+
+function toggleFridgeIngredient(ing) {
+  const clean = ing.toLowerCase().trim();
+  const idx = AppState.fridgeIngredients.indexOf(clean);
+  if (idx >= 0) AppState.fridgeIngredients.splice(idx, 1);
+  else AppState.fridgeIngredients.push(clean);
+  renderFridgeChips();
+  filterAndRenderRecipes();
+}
+
+function addCustomFridgeIngredient() {
+  const input = document.getElementById('fridge-custom-input');
+  if (!input || !input.value.trim()) return;
+  const clean = input.value.toLowerCase().trim();
+  if (!AppState.fridgeIngredients.includes(clean)) {
+    AppState.fridgeIngredients.push(clean);
+  }
+  input.value = '';
+  renderFridgeChips();
+  filterAndRenderRecipes();
+}
+
+function clearFridgeIngredients() {
+  AppState.fridgeIngredients = [];
+  renderFridgeChips();
+  filterAndRenderRecipes();
+}
+
+// In-App GitHub Release Update Checker
+async function checkForAppUpdate() {
+  try {
+    const url = 'https://api.github.com/repos/kashifameen/clean-cooking-app/releases/latest';
+    let data = null;
+    if (window.AndroidMealieBridge && typeof window.AndroidMealieBridge.fetchJson === 'function') {
+      const raw = JSON.parse(window.AndroidMealieBridge.fetchJson(url, ''));
+      if (raw.ok) data = JSON.parse(raw.body);
+    } else {
+      const res = await fetch(url);
+      if (res.ok) data = await res.json();
+    }
+    if (!data || !data.tag_name) return;
+    const latestVer = data.tag_name.replace(/^v/i, '');
+    if (latestVer !== APP_VERSION && parseFloat(latestVer) > parseFloat(APP_VERSION)) {
+      const banner = document.getElementById('app-update-banner');
+      if (!banner) return;
+      const apkAsset = (data.assets || []).find(a => a.name && a.name.endsWith('.apk'));
+      const dlUrl = (apkAsset && apkAsset.browser_download_url) || data.html_url;
+      banner.classList.remove('hidden');
+      banner.innerHTML = `
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
+          <span>🚀 New version <strong>${data.tag_name}</strong> is available!</span>
+          <div class="flex items-center gap-2">
+            <a href="${dlUrl}" target="_blank" rel="noopener noreferrer" class="px-3 py-1 rounded-lg bg-emerald-500 text-slate-950 font-black text-[11px]">Download APK</a>
+            <button onclick="document.getElementById('app-update-banner').classList.add('hidden')" class="text-slate-400 hover:text-white">✕</button>
+          </div>
+        </div>
+      `;
+    }
+  } catch {}
+}
 
 function detectPreheatStage(rawSteps, mode) {
   const joined = rawSteps.join(' ');
@@ -2585,8 +2879,12 @@ function loadGuidedStage(idx, autoStartTimer = true) {
   GuidedCookState.totalSec = stage.durationSec || 0;
   GuidedCookState.remainingSec = stage.durationSec || 0;
 
+  speakText(`${stage.label}. ${stage.text}`);
+
   if (autoStartTimer && stage.durationSec > 0) {
     startGuidedInterval();
+  } else {
+    stopNativeForegroundTimer();
   }
 
   renderGuidedCooking();
@@ -2597,6 +2895,14 @@ function startGuidedInterval() {
   if (GuidedCookState.remainingSec <= 0) return;
   GuidedCookState.isRunning = true;
   GuidedCookState.isReady = false;
+
+  const curStage = GuidedCookState.steps[GuidedCookState.currentIdx];
+  const stLabel = curStage ? curStage.label : 'Cooking Timer';
+  startNativeForegroundTimer(
+    GuidedCookState.remainingSec,
+    `⏰ ${stLabel} — READY!`,
+    `${stLabel} finished for ${GuidedCookState.recipe ? GuidedCookState.recipe.title : 'your recipe'}! Tap to continue.`
+  );
 
   GuidedCookState.intervalId = setInterval(() => {
     if (GuidedCookState.remainingSec > 1) {
@@ -2625,6 +2931,7 @@ function startGuidedInterval() {
         ? `${stageLabel} is READY! Tap to move to the next step for ${GuidedCookState.recipe.title}.`
         : `${stageLabel} is READY! Tap to continue cooking ${GuidedCookState.recipe.title}.`;
       sendTimerNotification(`⏰ ${stageLabel} — READY!`, notifMsg);
+      speakText(`${stageLabel} is ready! Tap next step to continue.`);
       showToast(`✅ ${stageLabel} is READY!`);
       renderGuidedCooking();
     }
@@ -2730,6 +3037,7 @@ function reopenGuidedCooking() {
 
 function closeGuidedCooking() {
   stopGuidedInterval();
+  stopNativeForegroundTimer();
   GuidedCookState.active = false;
   GuidedCookState.isReady = false;
   setAndroidKeepScreenOn(false);
@@ -2755,7 +3063,7 @@ function renderPinnedTopTimerBar() {
 
     // Show pinned global top bar whenever Guided Cooking is minimized OR running
     bar.classList.remove('hidden');
-    bar.className = `sticky top-0 z-[75] backdrop-blur-xl shadow-xl transition-colors ${isReady ? 'bg-emerald-950/95 border-b-2 border-emerald-400' : 'bg-slate-950/95 border-b-2 border-amber-500/70'}`;
+    bar.className = `fixed top-0 left-0 right-0 z-[75] backdrop-blur-xl shadow-xl transition-colors ${isReady ? 'bg-emerald-950/95 border-b-2 border-emerald-400' : 'bg-slate-950/95 border-b-2 border-amber-500/70'}`;
     bar.innerHTML = `
       <div class="max-w-7xl mx-auto px-3 sm:px-6 py-2 flex items-center justify-between gap-2">
         <div class="flex items-center gap-2.5 min-w-0 cursor-pointer flex-1" onclick="reopenGuidedCooking()">
@@ -2798,7 +3106,7 @@ function renderPinnedTopTimerBar() {
     const [key, t] = activeStepEntries[0];
     const isReady = Boolean(t.isReady);
     bar.classList.remove('hidden');
-    bar.className = `sticky top-0 z-[75] backdrop-blur-xl shadow-xl transition-colors ${isReady ? 'bg-emerald-950/95 border-b-2 border-emerald-400' : 'bg-slate-950/95 border-b-2 border-amber-500/70'}`;
+    bar.className = `fixed top-0 left-0 right-0 z-[75] backdrop-blur-xl shadow-xl transition-colors ${isReady ? 'bg-emerald-950/95 border-b-2 border-emerald-400' : 'bg-slate-950/95 border-b-2 border-amber-500/70'}`;
     bar.innerHTML = `
       <div class="max-w-7xl mx-auto px-3 sm:px-6 py-2 flex items-center justify-between gap-2">
         <div class="flex items-center gap-2.5 min-w-0 flex-1">

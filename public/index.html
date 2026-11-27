@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Clean Cooking — 100% Halal Cookbook App (1,418 Recipes)</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="vendor/tailwind.js"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -33,7 +33,7 @@
   <meta name="theme-color" content="#10b981">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="vendor/lucide.min.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       if (window.AndroidMealieBridge || location.hostname === 'appassets.androidplatform.net') {
@@ -51,9 +51,14 @@
 </head>
 <body class="bg-[#090d16] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-slate-950">
 
-  <!-- Pinned Sticky Top Timer Bar (Always visible at top of screen while any timer is running or READY!) -->
-  <div id="pinned-top-timer-bar" class="hidden sticky top-0 z-[75] bg-slate-950/95 backdrop-blur-xl border-b-2 border-amber-500/70 shadow-xl shadow-amber-500/15">
+  <!-- Pinned Fixed Top Timer Bar (Always locked at y=0 even when scrolling!) -->
+  <div id="pinned-top-timer-bar" class="hidden fixed top-0 left-0 right-0 z-[75] bg-slate-950/95 backdrop-blur-xl border-b-2 border-amber-500/70 shadow-xl shadow-amber-500/15">
     <!-- Rendered dynamically by JS -->
+  </div>
+
+  <!-- In-App Update Available Banner (Auto-checks GitHub Releases) -->
+  <div id="app-update-banner" class="hidden bg-emerald-950/95 border-b border-emerald-500/40 px-3 py-2 text-xs text-emerald-200">
+    <!-- Rendered dynamically by JS when a newer APK release exists -->
   </div>
 
   <!-- Top Navbar (Auto-resizes cleanly for Fold cover screens, unfolded screens, phones & tablets) -->
@@ -211,6 +216,24 @@
               <button class="quick-tag-btn px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-medium" data-tag="Chicken">Chicken</button>
               <button class="quick-tag-btn px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-medium" data-tag="Beef">Beef</button>
             </div>
+          </div>
+        </div>
+
+        <!-- What's in My Fridge? Multi-Ingredient Finder -->
+        <div id="fridge-finder-bar" class="pt-3 border-t border-slate-800/80 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span class="text-xs font-heading font-bold text-emerald-300 flex items-center gap-1.5">
+              <i data-lucide="refrigerator" class="w-4 h-4 text-emerald-400"></i>
+              What's in My Fridge? <span class="text-slate-400 font-normal">(tap or add 2–3 ingredients you have)</span>
+            </span>
+            <div class="flex items-center gap-1.5">
+              <input type="text" id="fridge-custom-input" placeholder="Add ingredient..." class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 w-32 sm:w-40 focus:outline-none focus:border-emerald-500" onkeydown="if(event.key==='Enter'){addCustomFridgeIngredient();}">
+              <button onclick="addCustomFridgeIngredient()" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/35 text-xs font-bold transition">+ Add</button>
+              <button onclick="clearFridgeIngredients()" id="fridge-clear-btn" class="hidden px-2 py-1 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-300 text-xs font-bold transition">Clear</button>
+            </div>
+          </div>
+          <div id="fridge-chips-container" class="flex flex-wrap gap-1.5">
+            <!-- Rendered by JS -->
           </div>
         </div>
 
@@ -794,6 +817,10 @@
           <h3 id="guided-recipe-title" class="font-heading font-extrabold text-base sm:text-lg text-white truncate mt-1">Recipe Title</h3>
         </div>
         <div class="flex items-center gap-1.5 flex-shrink-0">
+          <button onclick="toggleGuidedVoice()" id="guided-voice-btn" class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold flex items-center gap-1 transition" title="Toggle Hands-Free Voice Readout">
+            <i data-lucide="volume-2" class="w-4 h-4"></i>
+            <span class="hidden sm:inline" id="guided-voice-label">Voice Off</span>
+          </button>
           <button onclick="minimizeGuidedCooking()" class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1 transition" title="Minimize & keep timer pinned at top">
             <i data-lucide="minimize-2" class="w-4 h-4"></i>
             <span class="hidden sm:inline">Pin Top</span>
@@ -842,6 +869,6 @@
     </div>
   </footer>
 
-  <script src="js/app.js?v=2.3"></script>
+  <script src="js/app.js?v=3.0"></script>
 </body>
 </html>

@@ -131,6 +131,7 @@ async function syncRemoteRecipes(showFeedback = false) {
 
   const statusParts = [];
   let remoteCollected = [];
+  let totalAddedCount = 0;
 
   // 1. Auto-sync from GitHub raw recipes.json
   if (settings.githubUrl) {
@@ -151,6 +152,7 @@ async function syncRemoteRecipes(showFeedback = false) {
           });
           const res = mergeRecipeLists(AppState.recipes, normalized, 'github');
           AppState.recipes = res.merged;
+          totalAddedCount += res.added;
           remoteCollected = remoteCollected.concat(normalized);
           statusParts.push(`GitHub: OK (${ghRecipes.length} recipes, +${res.added} new)`);
         }
@@ -219,16 +221,32 @@ async function syncRemoteRecipes(showFeedback = false) {
           return match ? parseFloat(match[1]) : fallback;
         };
 
+        const cals = Math.round(parseNum(m.nutrition && m.nutrition.calories, 450));
+        const pro = parseNum(m.nutrition && m.nutrition.proteinContent, 30);
+        const carbs = parseNum(m.nutrition && m.nutrition.carbohydrateContent, 40);
+        const fat = parseNum(m.nutrition && m.nutrition.fatContent, 12);
+        const serv = m.recipeYield || '1 serving';
+
         return {
           id: `mealie-${m.slug || m.id || idx}`,
+          number: 900 + idx,
           title: m.name || 'Mealie Recipe',
           category,
+          subCategory: 'Mealie Sync',
           subcategory: 'Mealie Sync',
-          calories: Math.round(parseNum(m.nutrition && m.nutrition.calories, 450)),
-          protein: parseNum(m.nutrition && m.nutrition.proteinContent, 30),
-          carbs: parseNum(m.nutrition && m.nutrition.carbohydrateContent, 40),
-          fat: parseNum(m.nutrition && m.nutrition.fatContent, 12),
-          servings: m.recipeYield || '1 serving',
+          nutrition: {
+            calories: cals,
+            protein: pro,
+            carbs: carbs,
+            fat: fat,
+            servings: serv,
+            proteinDensity: cals > 0 ? Math.round((pro / cals) * 1000) / 10 : 0
+          },
+          calories: cals,
+          protein: pro,
+          carbs: carbs,
+          fat: fat,
+          servings: serv,
           image: m.id ? `${base}/api/media/recipes/${m.id}/images/original.webp` : 'images/icon-512.png',
           ingredients,
           ingredientSections: [{ name: 'Ingredients', items: ingredients }],
@@ -240,6 +258,7 @@ async function syncRemoteRecipes(showFeedback = false) {
 
       const res = mergeRecipeLists(AppState.recipes, mealieMapped, 'mealie');
       AppState.recipes = res.merged;
+      totalAddedCount += res.added;
       remoteCollected = remoteCollected.concat(mealieMapped);
       statusParts.push(`Mealie: OK (${mealieMapped.length} synced, +${res.added} new)`);
     } catch (e) {
@@ -253,8 +272,10 @@ async function syncRemoteRecipes(showFeedback = false) {
     try {
       localStorage.setItem('clean_cooking_remote_recipes', JSON.stringify(remoteCollected));
     } catch {}
-    updateRecipeCountBadges();
-    renderApp();
+    if (totalAddedCount > 0 || showFeedback) {
+      updateRecipeCountBadges();
+      renderApp();
+    }
   }
 
   if (icon) icon.classList.remove('animate-spin');
@@ -606,24 +627,76 @@ function filterAndRenderRecipes() {
     return;
   }
 
-  grid.innerHTML = list.map(recipe => renderRecipeCard(recipe)).join('');
-  initLucideIcons();
+  // Progressive / Infinite-Scroll Rendering (24 cards at a time for instant mobile performance)
+  AppState.renderedRecipeCount = 0;
+  grid.innerHTML = '';
+  ensureRecipesGridDelegation(grid);
+  appendNextRecipeBatch();
+}
 
-  grid.querySelectorAll('.recipe-card').forEach(card => {
-    card.addEventListener('click', (e) => {
-      if (e.target.closest('.card-action-btn')) return;
-      const id = card.dataset.id;
-      openRecipeModal(id);
-    });
-  });
+const RECIPE_PAGE_SIZE = 24;
+let recipesScrollObserver = null;
+let recipesGridDelegated = false;
 
-  grid.querySelectorAll('.fav-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+function ensureRecipesGridDelegation(grid) {
+  if (recipesGridDelegated) return;
+  recipesGridDelegated = true;
+  grid.addEventListener('click', (e) => {
+    const favBtn = e.target.closest('.fav-btn');
+    if (favBtn) {
       e.stopPropagation();
-      const id = btn.dataset.id;
-      toggleFavorite(id);
-    });
+      toggleFavorite(favBtn.dataset.id);
+      return;
+    }
+    if (e.target.closest('.card-action-btn') || e.target.closest('#load-more-recipes-btn')) return;
+    const card = e.target.closest('.recipe-card');
+    if (card && card.dataset.id) {
+      openRecipeModal(card.dataset.id);
+    }
   });
+}
+
+function appendNextRecipeBatch() {
+  const grid = document.getElementById('recipes-grid');
+  if (!grid) return;
+
+  const oldSentinel = document.getElementById('recipes-load-sentinel');
+  if (oldSentinel) oldSentinel.remove();
+  if (recipesScrollObserver) {
+    recipesScrollObserver.disconnect();
+    recipesScrollObserver = null;
+  }
+
+  const list = AppState.filteredRecipes || [];
+  const start = AppState.renderedRecipeCount || 0;
+  if (start >= list.length) return;
+
+  const end = Math.min(start + RECIPE_PAGE_SIZE, list.length);
+  const batchHtml = list.slice(start, end).map(recipe => renderRecipeCard(recipe)).join('');
+  grid.insertAdjacentHTML('beforeend', batchHtml);
+  AppState.renderedRecipeCount = end;
+
+  if (end < list.length) {
+    const remaining = list.length - end;
+    grid.insertAdjacentHTML('beforeend', `
+      <div id="recipes-load-sentinel" class="col-span-full py-6 flex justify-center">
+        <button id="load-more-recipes-btn" onclick="appendNextRecipeBatch()" class="px-6 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-emerald-500/30 text-emerald-400 font-bold text-xs transition shadow">
+          Load More Recipes (${remaining} remaining)
+        </button>
+      </div>
+    `);
+    const sentinel = document.getElementById('recipes-load-sentinel');
+    if (sentinel && 'IntersectionObserver' in window) {
+      recipesScrollObserver = new IntersectionObserver((entries) => {
+        if (entries[0] && entries[0].isIntersecting) {
+          appendNextRecipeBatch();
+        }
+      }, { rootMargin: '400px' });
+      recipesScrollObserver.observe(sentinel);
+    }
+  }
+
+  initLucideIcons();
 }
 
 function renderRecipeCard(r) {
@@ -633,7 +706,7 @@ function renderRecipeCard(r) {
   return `
     <div class="recipe-card glass-card rounded-2xl overflow-hidden cursor-pointer flex flex-col group border border-slate-800/80 hover:border-emerald-500/40" data-id="${r.id}">
       <div class="recipe-img-container relative bg-slate-950">
-        <img src="${r.image}" alt="${r.title}" loading="lazy" class="recipe-img object-cover w-full h-full" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80'">
+        <img src="${r.image}" alt="${r.title}" loading="lazy" decoding="async" class="recipe-img object-cover w-full h-full" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80'">
         
         <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-black/30"></div>
 

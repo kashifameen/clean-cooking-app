@@ -2,7 +2,7 @@
 <html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Clean Cooking — 100% Halal High-Protein Cookbook App (277 Recipes)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -44,59 +44,64 @@
 </head>
 <body class="bg-[#090d16] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-slate-950">
 
-  <!-- Top Navbar -->
-  <header class="sticky top-0 z-40 bg-[#0c1220]/90 backdrop-blur-xl border-b border-slate-800/80 shadow-lg">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+  <!-- Top Navbar (Auto-resizes cleanly for Fold cover screens, unfolded screens, phones & tablets) -->
+  <header class="sticky top-0 z-40 bg-[#0c1220]/95 backdrop-blur-xl border-b border-slate-800/80 shadow-lg">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
       
-      <!-- Brand Logo -->
-      <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('recipes')">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-lime-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-          <i data-lucide="flame" class="w-6 h-6 text-slate-950 fill-slate-950"></i>
+      <!-- Brand Row (Brand + Mobile Sync Button) -->
+      <div class="flex items-center justify-between gap-2 min-w-0">
+        <div class="flex items-center gap-2.5 cursor-pointer min-w-0" onclick="switchTab('recipes')">
+          <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-lime-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 flex-shrink-0">
+            <i data-lucide="flame" class="w-5 h-5 sm:w-6 sm:h-6 text-slate-950 fill-slate-950"></i>
+          </div>
+          <div class="min-w-0">
+            <span class="font-heading font-black text-base sm:text-xl tracking-tight text-white flex items-center gap-1.5 truncate">
+              CLEAN <span class="text-emerald-400">COOKING</span>
+            </span>
+            <span class="block text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-wider font-semibold font-mono truncate">
+              100% Halal • 277 Recipes • By Kash
+            </span>
+          </div>
         </div>
-        <div>
-          <span class="font-heading font-black text-xl tracking-tight text-white flex items-center gap-1.5">
-            CLEAN <span class="text-emerald-400">COOKING</span>
-          </span>
-          <span class="block text-[10px] text-slate-400 uppercase tracking-widest font-semibold font-mono">
-            100% Halal • 277 Recipes • App Made by Kash
-          </span>
-        </div>
+
+        <!-- Mobile Sync button on top right so nav stays uncluttered -->
+        <button onclick="openSyncModal()" title="Auto-Sync Recipes (Mealie & GitHub)" class="md:hidden flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold border border-emerald-500/35 bg-slate-900/90 text-emerald-400 hover:bg-emerald-500/15 transition flex-shrink-0">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          <span>Sync</span>
+        </button>
       </div>
 
       <!-- App Made by Kash Badge -->
-      <div class="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/80 border border-emerald-500/30 text-xs shadow-sm">
+      <div class="hidden xl:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/80 border border-emerald-500/30 text-xs shadow-sm flex-shrink-0">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
         <span class="text-slate-300 font-medium">App Made by <strong class="text-emerald-400 font-extrabold">Kash</strong></span>
       </div>
 
-      <!-- Main Navigation Tabs -->
-      <nav class="flex items-center gap-1 sm:gap-2">
-        <button class="nav-tab-btn flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border transition text-emerald-400 border-emerald-500 bg-emerald-500/10" data-tab="recipes">
-          <i data-lucide="book-open" class="w-4 h-4"></i>
+      <!-- Main Navigation Tabs (Horizontally scrollable on narrow screens, never clips or overflows) -->
+      <nav class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 md:pb-0 -mx-1 px-1">
+        <button class="nav-tab-btn flex-shrink-0 whitespace-nowrap flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold border transition text-emerald-400 border-emerald-500 bg-emerald-500/10" data-tab="recipes">
+          <i data-lucide="book-open" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
           <span>Recipes (277)</span>
         </button>
-        <button class="nav-tab-btn flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border transition text-slate-400 border-transparent hover:text-slate-200" data-tab="drinks">
-          <i data-lucide="coffee" class="w-4 h-4 text-pink-400"></i>
-          <span>Drinks & Pink Tea</span>
+        <button class="nav-tab-btn flex-shrink-0 whitespace-nowrap flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold border transition text-slate-400 border-transparent hover:text-slate-200" data-tab="drinks">
+          <i data-lucide="coffee" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-pink-400"></i>
+          <span>Drinks</span>
         </button>
-        <button class="nav-tab-btn flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border transition text-slate-400 border-transparent hover:text-slate-200" data-tab="planner">
-          <i data-lucide="chef-hat" class="w-4 h-4 text-emerald-400"></i>
-          <span class="hidden sm:inline">Meal Prep & BMR</span>
-          <span class="sm:hidden">Meal Prep</span>
+        <button class="nav-tab-btn flex-shrink-0 whitespace-nowrap flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold border transition text-slate-400 border-transparent hover:text-slate-200" data-tab="planner">
+          <i data-lucide="chef-hat" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400"></i>
+          <span>Meal Prep</span>
         </button>
-        <button class="nav-tab-btn flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border transition text-slate-400 border-transparent hover:text-slate-200" data-tab="shopping">
-          <i data-lucide="shopping-bag" class="w-4 h-4"></i>
-          <span class="hidden sm:inline">Shopping List</span>
-          <span class="sm:hidden">Shop</span>
+        <button class="nav-tab-btn flex-shrink-0 whitespace-nowrap flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold border transition text-slate-400 border-transparent hover:text-slate-200" data-tab="shopping">
+          <i data-lucide="shopping-bag" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+          <span>Shop</span>
         </button>
-        <button class="nav-tab-btn flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border transition text-slate-400 border-transparent hover:text-slate-200" data-tab="guide">
-          <i data-lucide="sparkles" class="w-4 h-4"></i>
-          <span class="hidden sm:inline">Guides & IP Pro</span>
-          <span class="sm:hidden">Guide</span>
+        <button class="nav-tab-btn flex-shrink-0 whitespace-nowrap flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold border transition text-slate-400 border-transparent hover:text-slate-200" data-tab="guide">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+          <span>Guides</span>
         </button>
-        <button onclick="openSyncModal()" id="sync-nav-btn" title="Auto-Sync Recipes (GitHub & Mealie)" class="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs sm:text-sm font-bold border border-emerald-500/30 bg-slate-900/80 text-emerald-400 hover:bg-emerald-500/15 transition">
+        <button onclick="openSyncModal()" id="sync-nav-btn" title="Auto-Sync Recipes (GitHub & Mealie)" class="hidden md:flex flex-shrink-0 whitespace-nowrap items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs sm:text-sm font-bold border border-emerald-500/30 bg-slate-900/80 text-emerald-400 hover:bg-emerald-500/15 transition">
           <i data-lucide="refresh-cw" id="sync-nav-icon" class="w-4 h-4"></i>
-          <span class="hidden md:inline">Sync</span>
+          <span>Sync</span>
         </button>
       </nav>
     </div>

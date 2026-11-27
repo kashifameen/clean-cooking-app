@@ -8,12 +8,14 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.graphics.Color
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -37,6 +39,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 class MainActivity : ComponentActivity() {
+  private lateinit var rootContainer: FrameLayout
   private lateinit var webView: WebView
   private val timerChannelId = "clean_cooking_timers"
 
@@ -161,7 +164,7 @@ class MainActivity : ComponentActivity() {
       .build()
 
     webView = WebView(this).apply {
-      layoutParams = ViewGroup.LayoutParams(
+      layoutParams = FrameLayout.LayoutParams(
         ViewGroup.LayoutParams.MATCH_PARENT,
         ViewGroup.LayoutParams.MATCH_PARENT
       )
@@ -175,7 +178,11 @@ class MainActivity : ComponentActivity() {
         mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
         cacheMode = WebSettings.LOAD_DEFAULT
         useWideViewPort = true
-        loadWithOverviewMode = true
+        loadWithOverviewMode = false
+        textZoom = 100
+        setSupportZoom(false)
+        builtInZoomControls = false
+        displayZoomControls = false
       }
 
       addJavascriptInterface(AndroidMealieBridge(), "AndroidMealieBridge")
@@ -207,13 +214,29 @@ class MainActivity : ComponentActivity() {
       }
     }
 
-    ViewCompat.setOnApplyWindowInsetsListener(webView) { v, insets ->
-      val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-      v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
-      insets
+    // Wrap WebView in a FrameLayout so system bar, camera cutout, and keyboard insets
+    // physically position the WebView cleanly below the status bar on all phones & foldables.
+    rootContainer = FrameLayout(this).apply {
+      layoutParams = ViewGroup.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT,
+        ViewGroup.LayoutParams.MATCH_PARENT
+      )
+      setBackgroundColor(darkBg)
+      addView(webView)
     }
 
-    setContentView(webView)
+    ViewCompat.setOnApplyWindowInsetsListener(rootContainer) { v, insets ->
+      val safeInsets = insets.getInsets(
+        WindowInsetsCompat.Type.systemBars() or
+          WindowInsetsCompat.Type.displayCutout() or
+          WindowInsetsCompat.Type.ime()
+      )
+      v.setPadding(safeInsets.left, safeInsets.top, safeInsets.right, safeInsets.bottom)
+      WindowInsetsCompat.CONSUMED
+    }
+
+    setContentView(rootContainer)
+    ViewCompat.requestApplyInsets(rootContainer)
 
     onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
       override fun handleOnBackPressed() {
@@ -229,6 +252,17 @@ class MainActivity : ComponentActivity() {
       webView.loadUrl("https://appassets.androidplatform.net/assets/www/index.html")
     } else {
       webView.restoreState(savedInstanceState)
+    }
+  }
+
+  override fun onConfigurationChanged(newConfig: Configuration) {
+    super.onConfigurationChanged(newConfig)
+    if (::rootContainer.isInitialized) {
+      ViewCompat.requestApplyInsets(rootContainer)
+      rootContainer.requestLayout()
+    }
+    if (::webView.isInitialized) {
+      webView.requestLayout()
     }
   }
 

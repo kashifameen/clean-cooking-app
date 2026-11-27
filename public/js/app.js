@@ -2149,26 +2149,6 @@ function filterPickerRecipes() {
 
   initLucideIcons();
 }
-  slots.forEach(s => {
-    AppState.mealPlan[s].forEach(item => {
-      const orig = AppState.recipes.find(r => r.id === item.recipeId);
-      if (orig) {
-        orig.ingredients.forEach(ing => {
-          AppState.shoppingList.push({
-            id: 'shop-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
-            text: scaleQuantityText(ing, item.scale),
-            recipeTitle: item.title,
-            completed: false
-          });
-          count++;
-        });
-      }
-    });
-  });
-
-  saveShoppingList();
-  showToast(`Added ${count} ingredients from meal plan to Shopping List!`);
-}
 
 function saveMealPlan() {
   localStorage.setItem('clean_cooking_meal_plan', JSON.stringify(AppState.mealPlan));

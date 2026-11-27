@@ -1,0 +1,15 @@
+# Temporary / scratch files
+scratch/
+__pycache__/
+*.pyc
+
+# Android build outputs, APKs (use GitHub Releases / Actions), & local SDK paths
+*.apk
+android-app/.gradle/
+android-app/build/
+android-app/app/build/
+android-app/app/src/main/assets/www/
+android-app/local.properties
+*.iml
+.idea/
+.DS_Store

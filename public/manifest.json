@@ -1,0 +1,33 @@
+{
+  "id": "clean-cooking-app",
+  "name": "Clean Cooking — 100% Halal High-Protein App",
+  "short_name": "Clean Cooking",
+  "description": "277 High-Protein Halal Recipes, 3-7 Day BMR Meal Prep, Step Timers, and Pressure Cooker / Hotpot Pro Guides — App Made by Kash",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "categories": ["food", "health", "lifestyle"],
+  "icons": [
+    {
+      "src": "images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "images/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

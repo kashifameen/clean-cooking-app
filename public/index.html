@@ -51,6 +51,11 @@
 </head>
 <body class="bg-[#090d16] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-slate-950">
 
+  <!-- Pinned Sticky Top Timer Bar (Always visible at top of screen while any timer is running or READY!) -->
+  <div id="pinned-top-timer-bar" class="hidden sticky top-0 z-[75] bg-slate-950/95 backdrop-blur-xl border-b-2 border-amber-500/70 shadow-xl shadow-amber-500/15">
+    <!-- Rendered dynamically by JS -->
+  </div>
+
   <!-- Top Navbar (Auto-resizes cleanly for Fold cover screens, unfolded screens, phones & tablets) -->
   <header class="sticky top-0 z-40 bg-[#0c1220]/95 backdrop-blur-xl border-b border-slate-800/80 shadow-lg">
     <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
@@ -788,14 +793,25 @@
           </div>
           <h3 id="guided-recipe-title" class="font-heading font-extrabold text-base sm:text-lg text-white truncate mt-1">Recipe Title</h3>
         </div>
-        <button onclick="closeGuidedCooking()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition" title="Exit Cooking Mode">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <button onclick="minimizeGuidedCooking()" class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1 transition" title="Minimize & keep timer pinned at top">
+            <i data-lucide="minimize-2" class="w-4 h-4"></i>
+            <span class="hidden sm:inline">Pin Top</span>
+          </button>
+          <button onclick="closeGuidedCooking()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition" title="Stop & Exit Cooking Mode">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
       </div>
 
       <!-- Progress Bar -->
       <div class="w-full h-1.5 bg-slate-800">
         <div id="guided-progress-bar" class="h-full bg-gradient-to-r from-emerald-500 to-lime-400 transition-all duration-300" style="width: 0%"></div>
+      </div>
+
+      <!-- Sticky Top Timer Slot (Always pinned at top of modal while running!) -->
+      <div id="guided-sticky-timer-slot" class="px-4 sm:px-6 pt-3 pb-2 bg-[#0b1120] border-b border-slate-800/80 hidden">
+        <!-- Rendered dynamically by JS -->
       </div>
 
       <!-- Body -->
@@ -826,6 +842,6 @@
     </div>
   </footer>
 
-  <script src="js/app.js?v=2.2"></script>
+  <script src="js/app.js?v=2.3"></script>
 </body>
 </html>

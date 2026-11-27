@@ -1,4 +1,4 @@
-const CACHE_NAME = 'clean-cooking-v17';
+const CACHE_NAME = 'clean-cooking-v18';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

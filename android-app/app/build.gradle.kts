@@ -11,8 +11,8 @@ android {
     applicationId = "com.kash.cleancooking"
     minSdk = 24
     targetSdk = 36
-    versionCode = 9
-    versionName = "2.2"
+    versionCode = 10
+    versionName = "2.3"
   }
 
   buildTypes {

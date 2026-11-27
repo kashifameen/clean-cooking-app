@@ -1250,6 +1250,10 @@ function startTimer(key, duration, recipe) {
     totalSec: duration,
     remainingSec: duration,
     isRunning: true,
+    isReady: false,
+    recipeTitle: recipe ? recipe.title : 'Recipe',
+    recipeId: recipe ? recipe.id : null,
+    label: key.replace(/^ip-step-/, 'IP Step ').replace(/^step-/, 'Step '),
     intervalId: null
   };
 
@@ -1257,18 +1261,22 @@ function startTimer(key, duration, recipe) {
     if (AppState.activeTimers[key].remainingSec > 0) {
       AppState.activeTimers[key].remainingSec--;
       refreshActiveStepsView(recipe);
+      renderPinnedTopTimerBar();
     } else {
       clearInterval(AppState.activeTimers[key].intervalId);
       AppState.activeTimers[key].isRunning = false;
+      AppState.activeTimers[key].isReady = true;
       playTimerChime();
       if (navigator.vibrate) navigator.vibrate([300, 150, 300, 150, 500]);
       sendTimerNotification('Clean Cooking — Timer Ready!', `Step timer finished for ${recipe.title}!`);
       showToast(`⏰ Step Timer Complete for ${recipe.title}!`);
       refreshActiveStepsView(recipe);
+      renderPinnedTopTimerBar();
     }
   }, 1000);
 
   refreshActiveStepsView(recipe);
+  renderPinnedTopTimerBar();
 }
 
 function toggleTimer(key, recipe) {
@@ -2626,8 +2634,13 @@ function startGuidedInterval() {
 function updateGuidedTimerDomOnly() {
   const clockEl = document.getElementById('guided-clock-display');
   const barEl = document.getElementById('guided-timer-bar');
+  const pinnedClockEl = document.getElementById('pinned-timer-clock');
+  const formatted = formatTime(GuidedCookState.remainingSec);
   if (clockEl) {
-    clockEl.textContent = formatTime(GuidedCookState.remainingSec);
+    clockEl.textContent = formatted;
+  }
+  if (pinnedClockEl) {
+    pinnedClockEl.textContent = formatted;
   }
   if (barEl && GuidedCookState.totalSec > 0) {
     const elapsedPct = Math.min(100, Math.round(((GuidedCookState.totalSec - GuidedCookState.remainingSec) / GuidedCookState.totalSec) * 100));
@@ -2696,15 +2709,123 @@ function guidedPrevStep() {
   }
 }
 
+function minimizeGuidedCooking() {
+  const modal = document.getElementById('guided-cook-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+  renderPinnedTopTimerBar();
+}
+
+function reopenGuidedCooking() {
+  if (!GuidedCookState.active || !GuidedCookState.recipe) return;
+  const modal = document.getElementById('guided-cook-modal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+  renderGuidedCooking();
+}
+
 function closeGuidedCooking() {
   stopGuidedInterval();
   GuidedCookState.active = false;
+  GuidedCookState.isReady = false;
   setAndroidKeepScreenOn(false);
   const modal = document.getElementById('guided-cook-modal');
   if (modal) {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
   }
+  renderPinnedTopTimerBar();
+}
+
+function renderPinnedTopTimerBar() {
+  const bar = document.getElementById('pinned-top-timer-bar');
+  if (!bar) return;
+
+  // Priority 1: Active Guided Cooking timer (show global pinned bar whenever Guided modal is minimized)
+  const guidedModal = document.getElementById('guided-cook-modal');
+  const guidedVisible = guidedModal && !guidedModal.classList.contains('hidden');
+  if (GuidedCookState.active && GuidedCookState.recipe && !guidedVisible && (GuidedCookState.isRunning || GuidedCookState.isReady || GuidedCookState.remainingSec > 0)) {
+    const stage = GuidedCookState.steps[GuidedCookState.currentIdx];
+    const label = stage ? stage.label : 'Cooking Timer';
+    const isReady = GuidedCookState.isReady;
+
+    // Show pinned global top bar whenever Guided Cooking is minimized OR running
+    bar.classList.remove('hidden');
+    bar.className = `sticky top-0 z-[75] backdrop-blur-xl shadow-xl transition-colors ${isReady ? 'bg-emerald-950/95 border-b-2 border-emerald-400' : 'bg-slate-950/95 border-b-2 border-amber-500/70'}`;
+    bar.innerHTML = `
+      <div class="max-w-7xl mx-auto px-3 sm:px-6 py-2 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5 min-w-0 cursor-pointer flex-1" onclick="reopenGuidedCooking()">
+          <span class="w-2.5 h-2.5 rounded-full flex-shrink-0 ${isReady ? 'bg-emerald-400 animate-ping' : (GuidedCookState.isRunning ? 'bg-amber-400 animate-pulse' : 'bg-slate-500')}"></span>
+          <div class="min-w-0">
+            <div class="text-xs font-heading font-extrabold ${isReady ? 'text-emerald-300' : 'text-amber-300'} truncate">
+              ${isReady ? `READY! • ${label}` : label}
+            </div>
+            <div class="text-[10px] text-slate-400 truncate">${GuidedCookState.recipe.title}</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <span id="pinned-timer-clock" class="font-mono font-black text-base sm:text-lg px-2.5 py-0.5 rounded-lg ${isReady ? 'bg-emerald-500 text-slate-950 animate-pulse' : 'bg-slate-900 text-amber-300 border border-amber-500/40'}">
+            ${isReady ? 'READY!' : formatTime(GuidedCookState.remainingSec)}
+          </span>
+          ${isReady ? `
+            <button onclick="reopenGuidedCooking(); guidedNextStep();" class="px-2.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition">Next →</button>
+          ` : `
+            <button onclick="guidedToggleTimer()" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 transition" title="${GuidedCookState.isRunning ? 'Pause' : 'Resume'}">
+              <i data-lucide="${GuidedCookState.isRunning ? 'pause' : 'play'}" class="w-3.5 h-3.5"></i>
+            </button>
+            <button onclick="guidedAdjustTimer(60)" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono font-bold text-[11px] border border-slate-700 transition">+1m</button>
+          `}
+          ${!guidedVisible ? `
+            <button onclick="reopenGuidedCooking()" class="px-2 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold text-[11px] transition">Open</button>
+          ` : ''}
+          <button onclick="closeGuidedCooking()" class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition" title="Stop timer">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+    `;
+    initLucideIcons();
+    return;
+  }
+
+  // Priority 2: Any running or READY individual step timer
+  const activeStepEntries = Object.entries(AppState.activeTimers).filter(([, t]) => t && (t.isRunning || t.isReady || t.remainingSec > 0));
+  if (activeStepEntries.length > 0) {
+    const [key, t] = activeStepEntries[0];
+    const isReady = Boolean(t.isReady);
+    bar.classList.remove('hidden');
+    bar.className = `sticky top-0 z-[75] backdrop-blur-xl shadow-xl transition-colors ${isReady ? 'bg-emerald-950/95 border-b-2 border-emerald-400' : 'bg-slate-950/95 border-b-2 border-amber-500/70'}`;
+    bar.innerHTML = `
+      <div class="max-w-7xl mx-auto px-3 sm:px-6 py-2 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5 min-w-0 flex-1">
+          <span class="w-2.5 h-2.5 rounded-full flex-shrink-0 ${isReady ? 'bg-emerald-400 animate-ping' : (t.isRunning ? 'bg-amber-400 animate-pulse' : 'bg-slate-500')}"></span>
+          <div class="min-w-0">
+            <div class="text-xs font-heading font-extrabold ${isReady ? 'text-emerald-300' : 'text-amber-300'} truncate">
+              ${isReady ? `READY! • ${t.label || 'Timer'}` : (t.label || 'Step Timer')}
+            </div>
+            <div class="text-[10px] text-slate-400 truncate">${t.recipeTitle || ''}</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <span class="font-mono font-black text-base sm:text-lg px-2.5 py-0.5 rounded-lg ${isReady ? 'bg-emerald-500 text-slate-950 animate-pulse' : 'bg-slate-900 text-amber-300 border border-amber-500/40'}">
+            ${isReady ? 'READY!' : formatTime(t.remainingSec)}
+          </span>
+          <button onclick="resetTimer('${key}', ${t.totalSec}, AppState.activeModalRecipe); renderPinnedTopTimerBar();" class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition" title="Dismiss timer">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+    `;
+    initLucideIcons();
+    return;
+  }
+
+  bar.classList.add('hidden');
+  bar.innerHTML = '';
 }
 
 function renderGuidedCooking() {
@@ -2818,6 +2939,18 @@ function renderGuidedCooking() {
   }
 
   const nextStage = GuidedCookState.steps[idx + 1];
+  const stickyTimerSlot = document.getElementById('guided-sticky-timer-slot');
+
+  // Keep the active/ready timer pinned right at the TOP of the Guided Cooking modal!
+  if (stickyTimerSlot) {
+    if (hasTimer || GuidedCookState.isReady) {
+      stickyTimerSlot.classList.remove('hidden');
+      stickyTimerSlot.innerHTML = timerCardHtml;
+    } else {
+      stickyTimerSlot.classList.add('hidden');
+      stickyTimerSlot.innerHTML = '';
+    }
+  }
 
   bodyEl.innerHTML = `
     <div class="space-y-3">
@@ -2832,7 +2965,7 @@ function renderGuidedCooking() {
       </p>
     </div>
 
-    ${timerCardHtml}
+    ${(!hasTimer && !GuidedCookState.isReady) ? timerCardHtml : ''}
 
     ${nextStage ? `
       <div class="p-3 rounded-xl bg-slate-900/40 border border-slate-800/60 flex items-center gap-2.5 text-xs text-slate-400">
@@ -2852,5 +2985,6 @@ function renderGuidedCooking() {
     </button>
   `;
 
+  renderPinnedTopTimerBar();
   initLucideIcons();
 }
